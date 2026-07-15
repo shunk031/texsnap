@@ -1,3 +1,5 @@
+import type { BackgroundMargin } from './types';
+
 export const colorPalette = [
   [
     [255, 255, 255],
@@ -101,6 +103,12 @@ export const backgroundPalette = [
 export type BackgroundColor = (typeof backgroundPalette)[number];
 export type Rgb = readonly [number, number, number];
 
+const backgroundColorHexes = new Set(
+  backgroundPalette.map((color) => color.hex.toLowerCase()),
+);
+const bboxDimensionPattern =
+  /^(\.\d+|\d+(\.\d*)?)(pt|em|ex|mu|px|in|cm|mm)$/;
+
 export function wrapSelectionWithColor(
   source: string,
   start: number,
@@ -129,7 +137,7 @@ export function wrapSelectionWithBackground(
   start: number,
   end: number,
   hex: string,
-  margin: string,
+  margin: BackgroundMargin,
 ): { source: string; start: number; end: number } {
   const selectionStart = Math.min(start, end);
   const selectionEnd = Math.max(start, end);
@@ -144,6 +152,29 @@ export function wrapSelectionWithBackground(
     start: selectionStart,
     end: selectionStart + replacement.length,
   };
+}
+
+export function updateBackgroundMargins(
+  source: string,
+  margin: BackgroundMargin,
+): string {
+  return source.replace(/\\bbox\[([^\]]+)\]\{/g, (match, options: string) => {
+    const parts = options.split(',').map((part) => part.trim());
+    if (parts.length < 1 || parts.length > 2) return match;
+
+    const color = parts.find((part) => backgroundColorHexes.has(part.toLowerCase()));
+    if (!color) return match;
+
+    const hasOnlyColor = parts.length === 1;
+    const hasGeneratedMargin =
+      parts.length === 2 &&
+      parts.some((part) => bboxDimensionPattern.test(part)) &&
+      parts.some((part) => part === color);
+    if (!hasOnlyColor && !hasGeneratedMargin) return match;
+
+    const bboxOptions = margin === '0em' ? color : `${margin},${color}`;
+    return String.raw`\bbox[${bboxOptions}]{`;
+  });
 }
 
 export function isLightColor(rgb: Rgb): boolean {

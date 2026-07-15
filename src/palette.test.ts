@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   backgroundPalette,
   isLightColor,
+  updateBackgroundMargins,
   wrapSelectionWithBackground,
   wrapSelectionWithColor,
 } from './palette';
@@ -70,6 +71,30 @@ describe('palette', () => {
       { name: 'light purple 3', hex: '#d9d2e9' },
       { name: 'light magenta 3', hex: '#ead1dc' },
     ]);
+  });
+
+  it('updates generated bbox background margins', () => {
+    const source = String.raw`\bbox[#f4cccc]{x} + \bbox[2px,#d9ead3]{y}`;
+
+    expect(updateBackgroundMargins(source, '.16em')).toBe(
+      String.raw`\bbox[.16em,#f4cccc]{x} + \bbox[.16em,#d9ead3]{y}`,
+    );
+  });
+
+  it('removes generated bbox margins when margin is zero', () => {
+    const source = String.raw`\bbox[.12em,#f4cccc]{x}`;
+
+    expect(updateBackgroundMargins(source, '0em')).toBe(
+      String.raw`\bbox[#f4cccc]{x}`,
+    );
+  });
+
+  it('leaves non-palette and complex bbox options unchanged', () => {
+    const source =
+      String.raw`\bbox[.12em,#123456]{x} + ` +
+      String.raw`\bbox[.12em,border:1px solid #f4cccc,#f4cccc]{y}`;
+
+    expect(updateBackgroundMargins(source, '.16em')).toBe(source);
   });
 
   it('detects light colors', () => {

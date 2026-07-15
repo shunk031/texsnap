@@ -19,6 +19,7 @@ import {
   backgroundPalette,
   colorPalette,
   isLightColor,
+  updateBackgroundMargins,
   wrapSelectionWithBackground,
   wrapSelectionWithColor,
 } from './palette';
@@ -208,7 +209,10 @@ function bindEvents(): void {
     });
   }
 
-  controls.backgroundMargin.addEventListener('change', syncStateFromControls);
+  controls.backgroundMargin.addEventListener('change', () => {
+    updateSourceBackgroundMargins();
+    void generate();
+  });
 
   window.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
@@ -275,6 +279,23 @@ function applyBackground(hex: string): void {
   applySourceWrap((source, start, end) =>
     wrapSelectionWithBackground(source, start, end, hex, state.backgroundMargin),
   );
+}
+
+function updateSourceBackgroundMargins(): void {
+  syncStateFromControls();
+  const source = editorView.state.doc.toString();
+  const updated = updateBackgroundMargins(source, state.backgroundMargin);
+  if (updated === source) return;
+
+  editorView.dispatch({
+    changes: {
+      from: 0,
+      to: editorView.state.doc.length,
+      insert: updated,
+    },
+  });
+  state.source = updated;
+  persist();
 }
 
 function applySourceWrap(
