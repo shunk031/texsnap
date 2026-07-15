@@ -30,4 +30,16 @@ describe('render', () => {
     expect(result.svgElement.style.color).toBe('rgb(255, 255, 255)');
     expect(result.svgElement.style.stroke).toBe('currentColor');
   });
+
+  it('renders bbox backgrounds in MathJax output', async () => {
+    const result = await renderEquation({
+      ...defaultState,
+      source: String.raw`\bbox[2px,#f4cccc]{x}`,
+    });
+
+    const background = result.svgElement.querySelector('rect[fill="#f4cccc"]');
+    expect(result.svgText).toContain('<svg');
+    expect(background).not.toBeNull();
+    expect(Number(background?.getAttribute('width'))).toBeGreaterThan(572);
+  });
 });

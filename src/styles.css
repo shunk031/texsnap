@@ -54,6 +54,21 @@ a {
   line-height: 1.2;
 }
 
+.palette-section {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.palette-section h2 {
+  margin: 0;
+  color: #536271;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .controls label {
   margin-top: 4px;
   font-size: 13px;
@@ -141,35 +156,50 @@ a {
   font-size: 12px;
 }
 
-.colorpalette table {
-  width: 100%;
-  border-spacing: 0;
+.text-color-palette,
+.background-palette {
+  display: grid;
+  gap: 4px;
 }
 
-.colorpalette td {
-  padding: 0;
+.text-color-palette {
+  grid-template-columns: repeat(10, 1fr);
 }
 
-.swatch {
+.background-palette {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.text-color-swatch,
+.background-swatch {
   display: block;
   width: 100%;
-  height: 18px;
-  border: 0;
-  border-left: 1px solid #ffffff;
-  border-bottom: 1px solid #ffffff;
+  border: 1px solid #b8c2cc;
+  border-radius: 2px;
   cursor: pointer;
 }
 
-.swatch:hover {
-  outline: 2px solid currentColor;
-  outline-offset: -2px;
+.text-color-swatch {
+  height: 18px;
 }
 
-.swatch.light {
+.background-swatch {
+  height: 24px;
+}
+
+.text-color-swatch:hover,
+.text-color-swatch:focus-visible,
+.background-swatch:hover,
+.background-swatch:focus-visible {
+  outline: 2px solid #34495e;
+  outline-offset: 1px;
+}
+
+.text-color-swatch.light {
   color: #000000;
 }
 
-.swatch.dark {
+.text-color-swatch.dark {
   color: #ffffff;
 }
 

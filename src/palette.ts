@@ -85,7 +85,23 @@ export const colorPalette = [
   ],
 ] as const;
 
+export const backgroundPalette = [
+  { name: 'light red berry 3', hex: '#e6b8af' },
+  { name: 'light red 3', hex: '#f4cccc' },
+  { name: 'light orange 3', hex: '#fce5cd' },
+  { name: 'light yellow 3', hex: '#fff2cc' },
+  { name: 'light green 3', hex: '#d9ead3' },
+  { name: 'light cyan 3', hex: '#d0e0e3' },
+  { name: 'light cornflower blue 3', hex: '#c9daf8' },
+  { name: 'light blue 3', hex: '#cfe2f3' },
+  { name: 'light purple 3', hex: '#d9d2e9' },
+  { name: 'light magenta 3', hex: '#ead1dc' },
+] as const;
+
+export type BackgroundColor = (typeof backgroundPalette)[number];
 export type Rgb = readonly [number, number, number];
+
+const backgroundPadding = '2px';
 
 export function wrapSelectionWithColor(
   source: string,
@@ -100,6 +116,26 @@ export function wrapSelectionWithColor(
   const selectionEnd = Math.max(start, end);
   const selected = source.slice(selectionStart, selectionEnd);
   const replacement = String.raw`\textcolor[rgb]{${r},${g},${b}}{${selected}}`;
+  const updated =
+    source.slice(0, selectionStart) + replacement + source.slice(selectionEnd);
+
+  return {
+    source: updated,
+    start: selectionStart,
+    end: selectionStart + replacement.length,
+  };
+}
+
+export function wrapSelectionWithBackground(
+  source: string,
+  start: number,
+  end: number,
+  hex: string,
+): { source: string; start: number; end: number } {
+  const selectionStart = Math.min(start, end);
+  const selectionEnd = Math.max(start, end);
+  const selected = source.slice(selectionStart, selectionEnd);
+  const replacement = String.raw`\bbox[${backgroundPadding},${hex}]{${selected}}`;
   const updated =
     source.slice(0, selectionStart) + replacement + source.slice(selectionEnd);
 
