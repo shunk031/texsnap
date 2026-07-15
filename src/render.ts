@@ -116,18 +116,45 @@ function expandBackgroundRects(svg: SVGSVGElement, state: AppState): void {
     }
   }
 
-  const maxHeight = Math.max(...rects.map((rect) => readNumberAttribute(rect, 'height')));
+  const rectGroups = new Map<Element, SVGRectElement[]>();
   for (const rect of rects) {
-    const height = readNumberAttribute(rect, 'height');
-    const difference = maxHeight - height;
-    if (difference <= 0) continue;
+    const group = backgroundRectVerticalGroup(rect, svg);
+    rectGroups.set(group, [...(rectGroups.get(group) ?? []), rect]);
+  }
 
-    adjustNumberAttribute(rect, 'y', -difference / 2);
-    rect.setAttribute('height', String(maxHeight));
-    changed = true;
+  for (const groupRects of rectGroups.values()) {
+    const minY = Math.min(
+      ...groupRects.map((rect) => readNumberAttribute(rect, 'y')),
+    );
+    const maxBottom = Math.max(
+      ...groupRects.map((rect) =>
+        readNumberAttribute(rect, 'y') + readNumberAttribute(rect, 'height'),
+      ),
+    );
+    const normalizedHeight = maxBottom - minY;
+
+    for (const rect of groupRects) {
+      if (
+        readNumberAttribute(rect, 'y') === minY &&
+        readNumberAttribute(rect, 'height') === normalizedHeight
+      ) {
+        continue;
+      }
+
+      rect.setAttribute('y', String(minY));
+      rect.setAttribute('height', String(normalizedHeight));
+      changed = true;
+    }
   }
 
   if (changed && margin !== 0) expandViewBoxHorizontally(svg, margin);
+}
+
+function backgroundRectVerticalGroup(
+  rect: SVGRectElement,
+  svg: SVGSVGElement,
+): Element {
+  return rect.closest('[data-mml-node="mtr"]') ?? svg;
 }
 
 function backgroundMarginUnits(margin: AppState['backgroundMargin']): number {

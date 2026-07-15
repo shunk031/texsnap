@@ -49,19 +49,50 @@ describe('render', () => {
     expect(Number(background?.getAttribute('height'))).toBeGreaterThan(453);
   });
 
-  it('normalizes palette bbox background heights', async () => {
+  it('normalizes palette bbox background vertical bounds', async () => {
     const result = await renderEquation({
       ...defaultState,
       source: String.raw`\bbox[0.08em,#f4cccc]{x} + \bbox[0.08em,#fce5cd]{\frac{a}{b}}`,
       backgroundMargin: '.08em',
     });
 
-    const heights = Array.from(
+    const backgrounds = Array.from(
       result.svgElement.querySelectorAll('rect[data-bgcolor="true"]'),
-      (rect) => rect.getAttribute('height'),
+      (rect) => ({
+        y: rect.getAttribute('y'),
+        height: rect.getAttribute('height'),
+      }),
     );
 
-    expect(new Set(heights).size).toBe(1);
+    expect(new Set(backgrounds.map((background) => background.y)).size).toBe(1);
+    expect(new Set(backgrounds.map((background) => background.height)).size).toBe(1);
+  });
+
+  it('keeps palette bbox vertical bounds scoped to each row', async () => {
+    const result = await renderEquation({
+      ...defaultState,
+      source: String.raw`\begin{align*}
+\bbox[0.08em,#f4cccc]{x} &= \bbox[0.08em,#fce5cd]{\frac{a}{b}} \\
+\bbox[0.08em,#fff2cc]{y} &= \bbox[0.08em,#d9ead3]{z}
+\end{align*}`,
+      backgroundMargin: '.08em',
+    });
+
+    const rows = Array.from(
+      result.svgElement.querySelectorAll('[data-mml-node="mtr"]'),
+      (row) =>
+        Array.from(row.querySelectorAll('rect[data-bgcolor="true"]'), (rect) => ({
+          y: rect.getAttribute('y'),
+          height: rect.getAttribute('height'),
+        })),
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(new Set(rows[0].map((background) => background.y)).size).toBe(1);
+    expect(new Set(rows[0].map((background) => background.height)).size).toBe(1);
+    expect(new Set(rows[1].map((background) => background.y)).size).toBe(1);
+    expect(new Set(rows[1].map((background) => background.height)).size).toBe(1);
+    expect(rows[1][0].height).not.toBe(rows[0][0].height);
   });
 
   it('rejects MathJax TeX errors instead of exporting an error SVG', async () => {
