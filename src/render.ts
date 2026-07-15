@@ -99,19 +99,35 @@ export function normalizeSvg(svg: SVGSVGElement, state: AppState): void {
 
 function expandBackgroundRects(svg: SVGSVGElement, state: AppState): void {
   const margin = backgroundMarginUnits(state.backgroundMargin);
-  if (margin === 0) return;
+  const rects = Array.from(
+    svg.querySelectorAll<SVGRectElement>('rect[data-bgcolor="true"]'),
+  ).filter((rect) => {
+    const fill = rect.getAttribute('fill')?.toLowerCase();
+    return fill ? backgroundColorHexes.has(fill) : false;
+  });
+  if (rects.length === 0) return;
 
   let changed = false;
-  for (const rect of svg.querySelectorAll<SVGRectElement>('rect[data-bgcolor="true"]')) {
-    const fill = rect.getAttribute('fill')?.toLowerCase();
-    if (!fill || !backgroundColorHexes.has(fill)) continue;
+  if (margin !== 0) {
+    for (const rect of rects) {
+      adjustNumberAttribute(rect, 'x', -margin);
+      adjustNumberAttribute(rect, 'width', margin * 2);
+      changed = true;
+    }
+  }
 
-    adjustNumberAttribute(rect, 'x', -margin);
-    adjustNumberAttribute(rect, 'width', margin * 2);
+  const maxHeight = Math.max(...rects.map((rect) => readNumberAttribute(rect, 'height')));
+  for (const rect of rects) {
+    const height = readNumberAttribute(rect, 'height');
+    const difference = maxHeight - height;
+    if (difference <= 0) continue;
+
+    adjustNumberAttribute(rect, 'y', -difference / 2);
+    rect.setAttribute('height', String(maxHeight));
     changed = true;
   }
 
-  if (changed) expandViewBoxHorizontally(svg, margin);
+  if (changed && margin !== 0) expandViewBoxHorizontally(svg, margin);
 }
 
 function backgroundMarginUnits(margin: AppState['backgroundMargin']): number {
@@ -124,8 +140,12 @@ function adjustNumberAttribute(
   attribute: string,
   delta: number,
 ): void {
-  const current = Number(element.getAttribute(attribute) ?? 0);
+  const current = readNumberAttribute(element, attribute);
   element.setAttribute(attribute, String(current + delta));
+}
+
+function readNumberAttribute(element: Element, attribute: string): number {
+  return Number(element.getAttribute(attribute) ?? 0);
 }
 
 function expandViewBoxHorizontally(svg: SVGSVGElement, margin: number): void {

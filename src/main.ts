@@ -329,6 +329,7 @@ async function generate(): Promise<void> {
 
   try {
     lastResult = await renderEquation(state);
+    applyPreviewResolution(lastResult.svgElement, state.resolution);
     controls.preview.replaceChildren(lastResult.svgElement);
     setStatus('');
   } catch (error) {
@@ -414,6 +415,28 @@ function labelForMode(mode: RendererMode): string {
   if (mode === 'png-transparent') return 'PNG transparent';
   if (mode === 'png-white') return 'PNG white';
   return 'SVG';
+}
+
+function applyPreviewResolution(
+  svg: SVGSVGElement,
+  resolution: Resolution,
+): void {
+  const scale = resolution / 150;
+  svg.dataset.previewScale = String(scale);
+  scaleSvgLength(svg, 'width', scale);
+  scaleSvgLength(svg, 'height', scale);
+}
+
+function scaleSvgLength(
+  svg: SVGSVGElement,
+  attribute: 'width' | 'height',
+  scale: number,
+): void {
+  const value = svg.getAttribute(attribute);
+  const match = value?.match(/^([\d.]+)([a-z%]+)$/i);
+  if (!match) return;
+
+  svg.setAttribute(attribute, `${Number(match[1]) * scale}${match[2]}`);
 }
 
 function mustGet<T extends HTMLElement>(id: string): T {

@@ -49,6 +49,21 @@ describe('render', () => {
     expect(Number(background?.getAttribute('height'))).toBeGreaterThan(453);
   });
 
+  it('normalizes palette bbox background heights', async () => {
+    const result = await renderEquation({
+      ...defaultState,
+      source: String.raw`\bbox[0.08em,#f4cccc]{x} + \bbox[0.08em,#fce5cd]{\frac{a}{b}}`,
+      backgroundMargin: '.08em',
+    });
+
+    const heights = Array.from(
+      result.svgElement.querySelectorAll('rect[data-bgcolor="true"]'),
+      (rect) => rect.getAttribute('height'),
+    );
+
+    expect(new Set(heights).size).toBe(1);
+  });
+
   it('rejects MathJax TeX errors instead of exporting an error SVG', async () => {
     await expect(
       renderEquation({
