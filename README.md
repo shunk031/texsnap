@@ -14,6 +14,19 @@ TeXsnap is a small, static TeX equation image generator. It runs entirely in the
 - Resolution, font-style preset, bold, white-on-black, and renderer-mode controls
 - URL hash sharing and local settings persistence
 
+## Usage Tips
+
+Use `\phantom{={}}` instead of `\quad` when stacked `\bbox` terms should start at the same position after an aligned equals sign.
+
+```tex
+\begin{align*}
+R(A)
+&= \bbox[0.08em,#f4cccc]{a_0} \\
+&\phantom{={}} \bbox[0.08em,#fce5cd]{+ a_1} \\
+&\phantom{={}} \bbox[0.08em,#fff2cc]{- a_2}
+\end{align*}
+```
+
 ## Development
 
 ```bash
