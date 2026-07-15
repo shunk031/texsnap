@@ -1,6 +1,10 @@
 import type { AppState, RenderResult } from './types';
+import { backgroundPalette } from './palette';
 
 let mathJaxPromise: Promise<MathJaxApi> | null = null;
+const backgroundColorHexes = new Set(
+  backgroundPalette.map((color) => color.hex.toLowerCase()),
+);
 
 interface MathJaxApi {
   convert: (source: string, options: { display: boolean }) => HTMLElement;
@@ -77,6 +81,7 @@ export function normalizeSvg(svg: SVGSVGElement, state: AppState): void {
     svg.style.stroke = 'currentColor';
     svg.style.strokeWidth = '0.35px';
   }
+  expandBackgroundRects(svg, state);
 
   if (state.whiteOnBlack || state.rendererMode === 'png-white') {
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -90,6 +95,63 @@ export function normalizeSvg(svg: SVGSVGElement, state: AppState): void {
     );
     svg.insertBefore(rect, svg.firstChild);
   }
+}
+
+function expandBackgroundRects(svg: SVGSVGElement, state: AppState): void {
+  const margin = backgroundMarginUnits(state.backgroundMargin);
+  if (margin === 0) return;
+
+  let changed = false;
+  for (const rect of svg.querySelectorAll<SVGRectElement>('rect[data-bgcolor="true"]')) {
+    const fill = rect.getAttribute('fill')?.toLowerCase();
+    if (!fill || !backgroundColorHexes.has(fill)) continue;
+
+    adjustNumberAttribute(rect, 'x', -margin);
+    adjustNumberAttribute(rect, 'width', margin * 2);
+    changed = true;
+  }
+
+  if (changed) expandViewBoxHorizontally(svg, margin);
+}
+
+function backgroundMarginUnits(margin: AppState['backgroundMargin']): number {
+  if (margin === '0em') return 0;
+  return Math.round(Number(margin.replace('em', '')) * 1000);
+}
+
+function adjustNumberAttribute(
+  element: Element,
+  attribute: string,
+  delta: number,
+): void {
+  const current = Number(element.getAttribute(attribute) ?? 0);
+  element.setAttribute(attribute, String(current + delta));
+}
+
+function expandViewBoxHorizontally(svg: SVGSVGElement, margin: number): void {
+  const viewBox = svg.getAttribute('viewBox');
+  if (!viewBox) return;
+
+  const [x, y, width, height] = viewBox.split(/\s+/).map(Number);
+  if ([x, y, width, height].some(Number.isNaN)) return;
+
+  svg.setAttribute(
+    'viewBox',
+    `${x - margin} ${y} ${width + margin * 2} ${height}`,
+  );
+  scaleLengthAttribute(svg, 'width', (width + margin * 2) / width);
+}
+
+function scaleLengthAttribute(
+  element: Element,
+  attribute: string,
+  scale: number,
+): void {
+  const value = element.getAttribute(attribute);
+  const match = value?.match(/^([\d.]+)([a-z%]+)$/i);
+  if (!match) return;
+
+  element.setAttribute(attribute, `${Number(match[1]) * scale}${match[2]}`);
 }
 
 async function ensureMathJax(): Promise<MathJaxApi> {

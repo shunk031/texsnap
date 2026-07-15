@@ -211,7 +211,7 @@ function buildBackgroundBbox(
   if (margin === '0em') return String.raw`\bbox[${hex}]{${body}}`;
 
   const dimension = normalizeBboxDimension(margin);
-  return String.raw`\bbox[${dimension},${hex}]{\mspace{${dimension}}${body}\mspace{${dimension}}}`;
+  return String.raw`\bbox[${dimension},${hex}]{${body}}`;
 }
 
 function normalizeBboxDimension(margin: BackgroundMargin): string {

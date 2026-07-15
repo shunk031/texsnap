@@ -56,21 +56,22 @@ a {
 
 .palette-section {
   display: grid;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: 4px;
+  margin-bottom: 2px;
 }
 
 .palette-section h2 {
   margin: 0;
   color: #536271;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .palette-section .compact-label {
   margin-top: 2px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -190,7 +191,7 @@ a {
 .text-color-palette,
 .background-palette {
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .text-color-palette {
@@ -211,11 +212,11 @@ a {
 }
 
 .text-color-swatch {
-  height: 18px;
+  height: 15px;
 }
 
 .background-swatch {
-  height: 24px;
+  height: 22px;
 }
 
 .text-color-swatch:hover,

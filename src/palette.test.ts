@@ -17,8 +17,7 @@ describe('palette', () => {
   });
 
   it('wraps selected text with a bbox background command', () => {
-    const replacement =
-      String.raw`\bbox[0.12em,#f4cccc]{\mspace{0.12em}x\mspace{0.12em}}`;
+    const replacement = String.raw`\bbox[0.12em,#f4cccc]{x}`;
     const result = wrapSelectionWithBackground(
       'a + x + b',
       4,
@@ -33,8 +32,7 @@ describe('palette', () => {
   });
 
   it('normalizes reversed selections', () => {
-    const replacement =
-      String.raw`\bbox[0.12em,#f4cccc]{\mspace{0.12em}x\mspace{0.12em}}`;
+    const replacement = String.raw`\bbox[0.12em,#f4cccc]{x}`;
     const result = wrapSelectionWithBackground(
       'a + x + b',
       5,
@@ -81,14 +79,12 @@ describe('palette', () => {
     const source = String.raw`\bbox[#f4cccc]{x} + \bbox[2px,#d9ead3]{y}`;
 
     expect(updateBackgroundMargins(source, '.16em')).toBe(
-      String.raw`\bbox[0.16em,#f4cccc]{\mspace{0.16em}x\mspace{0.16em}} + ` +
-        String.raw`\bbox[0.16em,#d9ead3]{\mspace{0.16em}y\mspace{0.16em}}`,
+      String.raw`\bbox[0.16em,#f4cccc]{x} + \bbox[0.16em,#d9ead3]{y}`,
     );
   });
 
   it('removes generated bbox margins when margin is zero', () => {
-    const source =
-      String.raw`\bbox[0.12em,#f4cccc]{\mspace{0.12em}x\mspace{0.12em}}`;
+    const source = String.raw`\bbox[0.12em,#f4cccc]{x}`;
 
     expect(updateBackgroundMargins(source, '0em')).toBe(
       String.raw`\bbox[#f4cccc]{x}`,
