@@ -34,7 +34,7 @@ describe('render', () => {
   it('renders bbox backgrounds in MathJax output', async () => {
     const result = await renderEquation({
       ...defaultState,
-      source: String.raw`\bbox[2px,#f4cccc]{x}`,
+      source: String.raw`\bbox[.12em,#f4cccc]{x}`,
     });
 
     const background = result.svgElement.querySelector('rect[fill="#f4cccc"]');

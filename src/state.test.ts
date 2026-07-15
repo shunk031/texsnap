@@ -19,7 +19,7 @@ describe('state', () => {
       resolution: 600,
       rendererMode: 'png-white',
       whiteOnBlack: true,
-      backgroundMargin: '4px',
+      backgroundMargin: '.16em',
     });
 
     const loaded = loadState(storage, buildHashSource('from hash'));
@@ -27,6 +27,16 @@ describe('state', () => {
     expect(loaded.resolution).toBe(600);
     expect(loaded.rendererMode).toBe('png-white');
     expect(loaded.whiteOnBlack).toBe(true);
-    expect(loaded.backgroundMargin).toBe('4px');
+    expect(loaded.backgroundMargin).toBe('.16em');
+  });
+
+  it('falls back to the default background margin for old pixel settings', () => {
+    const storage = window.localStorage;
+    storage.clear();
+    storage.setItem('texsnap:settings', JSON.stringify({ backgroundMargin: '2px' }));
+
+    const loaded = loadState(storage, '');
+
+    expect(loaded.backgroundMargin).toBe(defaultState.backgroundMargin);
   });
 });

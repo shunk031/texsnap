@@ -54,12 +54,11 @@ app.innerHTML = `
         <div class="background-palette" id="backgroundPalette"></div>
         <label class="compact-label" for="backgroundMargin">Background Margin</label>
         <select id="backgroundMargin">
-          <option value="0px">0px</option>
-          <option value="1px">1px</option>
-          <option value="2px" selected>2px (default)</option>
-          <option value="3px">3px</option>
-          <option value="4px">4px</option>
-          <option value="6px">6px</option>
+          <option value="0em">None</option>
+          <option value=".08em">Compact (0.08em)</option>
+          <option value=".12em" selected>Normal (default)</option>
+          <option value=".16em">Comfortable (0.16em)</option>
+          <option value=".24em">Wide (0.24em)</option>
         </select>
       </section>
 

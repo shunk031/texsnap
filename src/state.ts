@@ -19,7 +19,7 @@ export const defaultState: AppState = {
   bold: false,
   whiteOnBlack: false,
   rendererMode: 'svg',
-  backgroundMargin: '2px',
+  backgroundMargin: '.12em',
 };
 
 const storageKey = 'texsnap:settings';
@@ -28,12 +28,11 @@ const resolutions: Resolution[] = [150, 300, 600, 1200];
 const rendererModes: RendererMode[] = ['svg', 'png-transparent', 'png-white'];
 const fontPresets: FontPreset[] = ['mathjax-tex', 'mathjax-newcm'];
 const backgroundMargins: BackgroundMargin[] = [
-  '0px',
-  '1px',
-  '2px',
-  '3px',
-  '4px',
-  '6px',
+  '0em',
+  '.08em',
+  '.12em',
+  '.16em',
+  '.24em',
 ];
 
 export function parseHashSource(hash: string): string | null {
@@ -69,21 +68,21 @@ function readSettings(storage: Storage): Partial<AppState> {
   const raw = storage.getItem(storageKey);
   if (!raw) return {};
   const value = JSON.parse(raw) as Partial<AppState>;
+  const settings: Partial<AppState> = {};
 
-  return {
-    source: typeof value.source === 'string' ? value.source : undefined,
-    resolution: isResolution(value.resolution) ? value.resolution : undefined,
-    fontPreset: isFontPreset(value.fontPreset) ? value.fontPreset : undefined,
-    bold: typeof value.bold === 'boolean' ? value.bold : undefined,
-    whiteOnBlack:
-      typeof value.whiteOnBlack === 'boolean' ? value.whiteOnBlack : undefined,
-    rendererMode: isRendererMode(value.rendererMode)
-      ? value.rendererMode
-      : undefined,
-    backgroundMargin: isBackgroundMargin(value.backgroundMargin)
-      ? value.backgroundMargin
-      : undefined,
-  };
+  if (typeof value.source === 'string') settings.source = value.source;
+  if (isResolution(value.resolution)) settings.resolution = value.resolution;
+  if (isFontPreset(value.fontPreset)) settings.fontPreset = value.fontPreset;
+  if (typeof value.bold === 'boolean') settings.bold = value.bold;
+  if (typeof value.whiteOnBlack === 'boolean') {
+    settings.whiteOnBlack = value.whiteOnBlack;
+  }
+  if (isRendererMode(value.rendererMode)) settings.rendererMode = value.rendererMode;
+  if (isBackgroundMargin(value.backgroundMargin)) {
+    settings.backgroundMargin = value.backgroundMargin;
+  }
+
+  return settings;
 }
 
 function isResolution(value: unknown): value is Resolution {

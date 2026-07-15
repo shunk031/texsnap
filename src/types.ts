@@ -4,7 +4,7 @@ export type Resolution = 150 | 300 | 600 | 1200;
 
 export type FontPreset = 'mathjax-tex' | 'mathjax-newcm';
 
-export type BackgroundMargin = '0px' | '1px' | '2px' | '3px' | '4px' | '6px';
+export type BackgroundMargin = '0em' | '.08em' | '.12em' | '.16em' | '.24em';
 
 export interface AppState {
   source: string;

@@ -21,12 +21,12 @@ describe('palette', () => {
       4,
       5,
       '#f4cccc',
-      '2px',
+      '.12em',
     );
 
-    expect(result.source).toBe(String.raw`a + \bbox[2px,#f4cccc]{x} + b`);
+    expect(result.source).toBe(String.raw`a + \bbox[.12em,#f4cccc]{x} + b`);
     expect(result.start).toBe(4);
-    expect(result.end).toBe(25);
+    expect(result.end).toBe(27);
   });
 
   it('normalizes reversed selections', () => {
@@ -35,12 +35,12 @@ describe('palette', () => {
       5,
       4,
       '#f4cccc',
-      '2px',
+      '.12em',
     );
 
-    expect(result.source).toBe(String.raw`a + \bbox[2px,#f4cccc]{x} + b`);
+    expect(result.source).toBe(String.raw`a + \bbox[.12em,#f4cccc]{x} + b`);
     expect(result.start).toBe(4);
-    expect(result.end).toBe(25);
+    expect(result.end).toBe(27);
   });
 
   it('omits bbox margin when margin is zero', () => {
@@ -49,7 +49,7 @@ describe('palette', () => {
       4,
       5,
       '#f4cccc',
-      '0px',
+      '0em',
     );
 
     expect(result.source).toBe(String.raw`a + \bbox[#f4cccc]{x} + b`);

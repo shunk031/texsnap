@@ -134,7 +134,7 @@ export function wrapSelectionWithBackground(
   const selectionStart = Math.min(start, end);
   const selectionEnd = Math.max(start, end);
   const selected = source.slice(selectionStart, selectionEnd);
-  const bboxOptions = margin === '0px' ? hex : `${margin},${hex}`;
+  const bboxOptions = margin === '0em' ? hex : `${margin},${hex}`;
   const replacement = String.raw`\bbox[${bboxOptions}]{${selected}}`;
   const updated =
     source.slice(0, selectionStart) + replacement + source.slice(selectionEnd);
