@@ -15,10 +15,23 @@ import {
   loadState,
   saveState,
 } from './state';
-import { colorPalette, isLightColor, wrapSelectionWithColor } from './palette';
+import {
+  backgroundPalette,
+  colorPalette,
+  isLightColor,
+  updateBackgroundMargins,
+  wrapSelectionWithBackground,
+  wrapSelectionWithColor,
+} from './palette';
 import { renderEquation } from './render';
 import { copyPng, copySvg, downloadPng, downloadSvg } from './export';
-import type { FontPreset, RendererMode, RenderResult, Resolution } from './types';
+import type {
+  BackgroundMargin,
+  FontPreset,
+  RendererMode,
+  RenderResult,
+  Resolution,
+} from './types';
 
 type IconNode = typeof Download;
 
@@ -33,7 +46,22 @@ app.innerHTML = `
   <div class="shell">
     <aside class="controls" aria-label="TeXsnap controls">
       <h1><a href="./">TeXsnap</a></h1>
-      <div class="colorpalette" id="colorpalette"></div>
+      <section class="palette-section" aria-labelledby="textColorPaletteLabel">
+        <h2 id="textColorPaletteLabel">Text Colors</h2>
+        <div class="text-color-palette" id="textColorPalette"></div>
+      </section>
+      <section class="palette-section" aria-labelledby="backgroundPaletteLabel">
+        <h2 id="backgroundPaletteLabel">Recommended Background Colors</h2>
+        <div class="background-palette" id="backgroundPalette"></div>
+        <label class="compact-label" for="backgroundMargin">Background Margin</label>
+        <select id="backgroundMargin">
+          <option value="0em">None</option>
+          <option value=".08em">Compact (0.08em)</option>
+          <option value=".12em" selected>Normal (default)</option>
+          <option value=".16em">Comfortable (0.16em)</option>
+          <option value=".24em">Wide (0.24em)</option>
+        </select>
+      </section>
 
       <label for="resolution">Resolution</label>
       <select id="resolution">
@@ -127,7 +155,9 @@ const controls = {
   downloadPng: mustGet<HTMLButtonElement>('downloadPng'),
   copySvg: mustGet<HTMLButtonElement>('copySvg'),
   copyPng: mustGet<HTMLButtonElement>('copyPng'),
-  colorPalette: mustGet<HTMLDivElement>('colorpalette'),
+  textColorPalette: mustGet<HTMLDivElement>('textColorPalette'),
+  backgroundPalette: mustGet<HTMLDivElement>('backgroundPalette'),
+  backgroundMargin: mustGet<HTMLSelectElement>('backgroundMargin'),
   preview: mustGet<HTMLDivElement>('preview'),
   status: mustGet<HTMLParagraphElement>('status'),
   modeLabel: mustGet<HTMLSpanElement>('modeLabel'),
@@ -142,7 +172,7 @@ function init(): void {
   }
   mountIcons();
   editorView = createEditor(state.source);
-  renderPalette();
+  renderPalettes();
   bindEvents();
   applyStateToControls();
   void generate();
@@ -179,6 +209,11 @@ function bindEvents(): void {
     });
   }
 
+  controls.backgroundMargin.addEventListener('change', () => {
+    updateSourceBackgroundMargins();
+    void generate();
+  });
+
   window.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
       event.preventDefault();
@@ -193,34 +228,86 @@ function bindEvents(): void {
   });
 }
 
-function renderPalette(): void {
-  const table = document.createElement('table');
-  const tbody = document.createElement('tbody');
-
-  for (const row of colorPalette) {
-    const tr = document.createElement('tr');
-    for (const rgb of row) {
-      const td = document.createElement('td');
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = `swatch ${isLightColor(rgb) ? 'light' : 'dark'}`;
-      button.style.backgroundColor = `rgb(${rgb.join(',')})`;
-      button.title = `rgb(${rgb.join(', ')})`;
-      button.addEventListener('click', () => applyColor(rgb));
-      td.append(button);
-      tr.append(td);
-    }
-    tbody.append(tr);
-  }
-
-  table.append(tbody);
-  controls.colorPalette.replaceChildren(table);
+function renderPalettes(): void {
+  renderTextColorPalette();
+  renderBackgroundPalette();
 }
 
-function applyColor(rgb: readonly [number, number, number]): void {
+function renderTextColorPalette(): void {
+  const fragment = document.createDocumentFragment();
+
+  for (const row of colorPalette) {
+    for (const rgb of row) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `text-color-swatch ${isLightColor(rgb) ? 'light' : 'dark'}`;
+      button.style.backgroundColor = `rgb(${rgb.join(',')})`;
+      button.title = `rgb(${rgb.join(', ')})`;
+      button.setAttribute('aria-label', `Apply rgb(${rgb.join(', ')}) text color`);
+      button.addEventListener('click', () => applyTextColor(rgb));
+      fragment.append(button);
+    }
+  }
+
+  controls.textColorPalette.replaceChildren(fragment);
+}
+
+function renderBackgroundPalette(): void {
+  const fragment = document.createDocumentFragment();
+
+  for (const color of backgroundPalette) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'background-swatch';
+    button.style.backgroundColor = color.hex;
+    button.title = `${color.name} ${color.hex}`;
+    button.setAttribute('aria-label', `Apply ${color.name} background`);
+    button.addEventListener('click', () => applyBackground(color.hex));
+    fragment.append(button);
+  }
+
+  controls.backgroundPalette.replaceChildren(fragment);
+}
+
+function applyTextColor(rgb: readonly [number, number, number]): void {
+  applySourceWrap((source, start, end) =>
+    wrapSelectionWithColor(source, start, end, rgb),
+  );
+}
+
+function applyBackground(hex: string): void {
+  applySourceWrap((source, start, end) =>
+    wrapSelectionWithBackground(source, start, end, hex, state.backgroundMargin),
+  );
+}
+
+function updateSourceBackgroundMargins(): void {
+  syncStateFromControls();
+  const source = editorView.state.doc.toString();
+  const updated = updateBackgroundMargins(source, state.backgroundMargin);
+  if (updated === source) return;
+
+  editorView.dispatch({
+    changes: {
+      from: 0,
+      to: editorView.state.doc.length,
+      insert: updated,
+    },
+  });
+  state.source = updated;
+  persist();
+}
+
+function applySourceWrap(
+  wrap: (
+    source: string,
+    start: number,
+    end: number,
+  ) => { source: string; start: number; end: number },
+): void {
   const selection = editorView.state.selection.main;
   const source = editorView.state.doc.toString();
-  const updated = wrapSelectionWithColor(source, selection.from, selection.to, rgb);
+  const updated = wrap(source, selection.from, selection.to);
   editorView.dispatch({
     changes: {
       from: 0,
@@ -242,6 +329,7 @@ async function generate(): Promise<void> {
 
   try {
     lastResult = await renderEquation(state);
+    applyPreviewResolution(lastResult.svgElement, state.resolution);
     controls.preview.replaceChildren(lastResult.svgElement);
     setStatus('');
   } catch (error) {
@@ -298,6 +386,7 @@ function applyStateToControls(): void {
   controls.bold.checked = state.bold;
   controls.whiteOnBlack.checked = state.whiteOnBlack;
   controls.rendererMode.value = state.rendererMode;
+  controls.backgroundMargin.value = state.backgroundMargin;
 }
 
 function syncStateFromControls(): void {
@@ -308,6 +397,7 @@ function syncStateFromControls(): void {
     bold: controls.bold.checked,
     whiteOnBlack: controls.whiteOnBlack.checked,
     rendererMode: controls.rendererMode.value as RendererMode,
+    backgroundMargin: controls.backgroundMargin.value as BackgroundMargin,
   };
   persist();
 }
@@ -325,6 +415,28 @@ function labelForMode(mode: RendererMode): string {
   if (mode === 'png-transparent') return 'PNG transparent';
   if (mode === 'png-white') return 'PNG white';
   return 'SVG';
+}
+
+function applyPreviewResolution(
+  svg: SVGSVGElement,
+  resolution: Resolution,
+): void {
+  const scale = resolution / 150;
+  svg.dataset.previewScale = String(scale);
+  scaleSvgLength(svg, 'width', scale);
+  scaleSvgLength(svg, 'height', scale);
+}
+
+function scaleSvgLength(
+  svg: SVGSVGElement,
+  attribute: 'width' | 'height',
+  scale: number,
+): void {
+  const value = svg.getAttribute(attribute);
+  const match = value?.match(/^([\d.]+)([a-z%]+)$/i);
+  if (!match) return;
+
+  svg.setAttribute(attribute, `${Number(match[1]) * scale}${match[2]}`);
 }
 
 function mustGet<T extends HTMLElement>(id: string): T {
