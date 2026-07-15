@@ -49,7 +49,7 @@ describe('render', () => {
     expect(Number(background?.getAttribute('height'))).toBeGreaterThan(453);
   });
 
-  it('aligns palette bbox background vertical centers', async () => {
+  it('normalizes palette bbox background vertical bounds', async () => {
     const result = await renderEquation({
       ...defaultState,
       source: String.raw`\bbox[0.08em,#f4cccc]{x} + \bbox[0.08em,#fce5cd]{\frac{a}{b}}`,
@@ -61,21 +61,14 @@ describe('render', () => {
       (rect) => ({
         y: rect.getAttribute('y'),
         height: rect.getAttribute('height'),
-        center:
-          Number(rect.getAttribute('y')) +
-          Number(rect.getAttribute('height')) / 2,
       }),
     );
 
-    expect(new Set(backgrounds.map((background) => background.center)).size).toBe(
-      1,
-    );
-    expect(new Set(backgrounds.map((background) => background.height)).size).toBe(
-      2,
-    );
+    expect(new Set(backgrounds.map((background) => background.y)).size).toBe(1);
+    expect(new Set(backgrounds.map((background) => background.height)).size).toBe(1);
   });
 
-  it('keeps palette bbox vertical center alignment scoped to each row', async () => {
+  it('keeps palette bbox vertical bounds scoped to each row', async () => {
     const result = await renderEquation({
       ...defaultState,
       source: String.raw`\begin{align*}
@@ -91,16 +84,15 @@ describe('render', () => {
         Array.from(row.querySelectorAll('rect[data-bgcolor="true"]'), (rect) => ({
           y: rect.getAttribute('y'),
           height: rect.getAttribute('height'),
-          center:
-            Number(rect.getAttribute('y')) +
-            Number(rect.getAttribute('height')) / 2,
         })),
     );
 
     expect(rows).toHaveLength(2);
-    expect(new Set(rows[0].map((background) => background.center)).size).toBe(1);
-    expect(new Set(rows[1].map((background) => background.center)).size).toBe(1);
-    expect(rows[0][0].height).not.toBe(rows[0][1].height);
+    expect(new Set(rows[0].map((background) => background.y)).size).toBe(1);
+    expect(new Set(rows[0].map((background) => background.height)).size).toBe(1);
+    expect(new Set(rows[1].map((background) => background.y)).size).toBe(1);
+    expect(new Set(rows[1].map((background) => background.height)).size).toBe(1);
+    expect(rows[1][0].height).not.toBe(rows[0][0].height);
   });
 
   it('rejects MathJax TeX errors instead of exporting an error SVG', async () => {

@@ -123,19 +123,26 @@ function expandBackgroundRects(svg: SVGSVGElement, state: AppState): void {
   }
 
   for (const groupRects of rectGroups.values()) {
-    const centerY = median(
-      groupRects.map((rect) =>
-        readNumberAttribute(rect, 'y') +
-        readNumberAttribute(rect, 'height') / 2,
+    const minY = Math.min(
+      ...groupRects.map((rect) => readNumberAttribute(rect, 'y')),
+    );
+    const maxBottom = Math.max(
+      ...groupRects.map((rect) =>
+        readNumberAttribute(rect, 'y') + readNumberAttribute(rect, 'height'),
       ),
     );
+    const normalizedHeight = maxBottom - minY;
 
     for (const rect of groupRects) {
-      const height = readNumberAttribute(rect, 'height');
-      const y = centerY - height / 2;
-      if (readNumberAttribute(rect, 'y') === y) continue;
+      if (
+        readNumberAttribute(rect, 'y') === minY &&
+        readNumberAttribute(rect, 'height') === normalizedHeight
+      ) {
+        continue;
+      }
 
-      rect.setAttribute('y', String(y));
+      rect.setAttribute('y', String(minY));
+      rect.setAttribute('height', String(normalizedHeight));
       changed = true;
     }
   }
@@ -148,14 +155,6 @@ function backgroundRectVerticalGroup(
   svg: SVGSVGElement,
 ): Element {
   return rect.closest('[data-mml-node="mtr"]') ?? svg;
-}
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 1) return sorted[middle];
-
-  return (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
 function backgroundMarginUnits(margin: AppState['backgroundMargin']): number {
