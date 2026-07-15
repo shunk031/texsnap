@@ -332,9 +332,29 @@ async function generate(): Promise<void> {
     controls.preview.replaceChildren(lastResult.svgElement);
     setStatus('');
   } catch (error) {
-    controls.preview.innerHTML = '';
-    setStatus(error instanceof Error ? error.message : 'Render failed.');
+    lastResult = null;
+    const message = error instanceof Error ? error.message : 'Render failed.';
+    showRenderError(message, state.source);
+    setStatus(message);
   }
+}
+
+function showRenderError(message: string, source: string): void {
+  const panel = document.createElement('div');
+  panel.className = 'render-error';
+  panel.setAttribute('role', 'alert');
+
+  const title = document.createElement('strong');
+  title.textContent = 'Render failed';
+
+  const detail = document.createElement('p');
+  detail.textContent = message;
+
+  const sourceBlock = document.createElement('pre');
+  sourceBlock.textContent = source;
+
+  panel.append(title, detail, sourceBlock);
+  controls.preview.replaceChildren(panel);
 }
 
 async function runAction(

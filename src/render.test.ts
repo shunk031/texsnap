@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { defaultState } from './state';
-import { prepareSource, renderEquation } from './render';
+import {
+  filterRenderablePackages,
+  getMathJaxErrorMessage,
+  prepareSource,
+  renderEquation,
+} from './render';
 
 describe('render', () => {
   it('keeps TeX source unchanged for visual-only options', () => {
@@ -41,5 +46,42 @@ describe('render', () => {
     expect(result.svgText).toContain('<svg');
     expect(background).not.toBeNull();
     expect(Number(background?.getAttribute('width'))).toBeGreaterThan(572);
+  });
+
+  it('rejects MathJax TeX errors instead of exporting an error SVG', async () => {
+    await expect(
+      renderEquation({
+        ...defaultState,
+        source: String.raw`\notacommand{x}`,
+      }),
+    ).rejects.toThrow(/TeX error:/);
+  });
+
+  it('extracts MathJax merror details for display', () => {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = String.raw`
+      <svg>
+        <g data-mml-node="merror">
+          <title>Undefined control sequence \badcommand</title>
+        </g>
+      </svg>
+    `;
+
+    expect(getMathJaxErrorMessage(wrapper)).toBe(
+      String.raw`TeX error: Undefined control sequence \badcommand`,
+    );
+  });
+
+  it('ignores successful MathJax output when no merror is present', () => {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = '<svg><g data-mml-node="mi"></g></svg>';
+
+    expect(getMathJaxErrorMessage(wrapper)).toBeNull();
+  });
+
+  it('keeps MathJax from rendering TeX errors as exportable output', () => {
+    expect(filterRenderablePackages(['base', 'noerrors', 'noundefined'])).toEqual([
+      'base',
+    ]);
   });
 });

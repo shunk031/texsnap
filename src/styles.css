@@ -337,6 +337,42 @@ a {
   max-width: none;
 }
 
+.render-error {
+  max-width: 780px;
+  border-left: 4px solid #c93434;
+  padding: 14px 16px;
+  background: #fff7f7;
+  color: #421f1f;
+}
+
+.render-error strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.render-error p {
+  margin: 0 0 12px;
+  color: #7d2525;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.render-error pre {
+  overflow: auto;
+  max-height: 180px;
+  margin: 0;
+  border: 1px solid #efc7c7;
+  padding: 10px;
+  background: #ffffff;
+  color: #1f2d3a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 760px) {
   .shell {
     grid-template-columns: 1fr;
