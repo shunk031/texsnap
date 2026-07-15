@@ -99,7 +99,18 @@ app.innerHTML = `
         </button>
       </div>
 
-      <p class="status" id="status" role="status">Ready</p>
+      <p class="status" id="status" role="status"></p>
+      <footer class="app-footer">
+        <a
+          class="repo-link"
+          href="https://github.com/shunk031/texsnap"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span data-icon="github"></span>
+          <span>shunk031/texsnap</span>
+        </a>
+      </footer>
     </aside>
 
     <main class="workspace">
@@ -281,7 +292,7 @@ async function generate(): Promise<void> {
   try {
     lastResult = await renderEquation(state);
     controls.preview.replaceChildren(lastResult.svgElement);
-    setStatus('Rendered.');
+    setStatus('');
   } catch (error) {
     controls.preview.innerHTML = '';
     setStatus(error instanceof Error ? error.message : 'Render failed.');
@@ -360,6 +371,11 @@ function mountIcons(): void {
 
   for (const placeholder of document.querySelectorAll<HTMLElement>('[data-icon]')) {
     const iconName = placeholder.dataset.icon;
+    if (iconName === 'github') {
+      placeholder.replaceChildren(createGitHubIcon());
+      continue;
+    }
+
     const icon = iconName ? icons[iconName] : undefined;
     if (!icon) continue;
 
@@ -372,6 +388,25 @@ function mountIcons(): void {
     });
     placeholder.replaceChildren(svg);
   }
+}
+
+function createGitHubIcon(): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', 'button-icon github-icon');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '16');
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('fill', 'currentColor');
+  path.setAttribute(
+    'd',
+    'M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.16c-3.34.73-4.04-1.42-4.04-1.42-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23A11.5 11.5 0 0 1 12 5.86c1.02 0 2.04.14 3 .41 2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.93.43.37.82 1.1.82 2.22v3.22c0 .32.22.69.82.58A12.01 12.01 0 0 0 24 12c0-6.63-5.37-12-12-12z',
+  );
+  svg.append(path);
+
+  return svg;
 }
 
 function createEditor(source: string): EditorView {
