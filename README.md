@@ -6,7 +6,7 @@ TeXsnap is a small, static TeX equation image generator. It runs entirely in the
 
 ## Features
 
-- TeX source editor with `Ctrl+S` / `Cmd+S` rendering
+- TeX source editor with <kbd>Ctrl</kbd>+<kbd>S</kbd> / <kbd>Cmd</kbd>+<kbd>S</kbd> rendering
 - MathJax SVG preview
 - Color palette that wraps selected source with `\textcolor[rgb]{...}{...}`
 - SVG download and clipboard copy
