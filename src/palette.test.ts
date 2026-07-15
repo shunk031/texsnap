@@ -17,6 +17,8 @@ describe('palette', () => {
   });
 
   it('wraps selected text with a bbox background command', () => {
+    const replacement =
+      String.raw`\bbox[0.12em,#f4cccc]{\mspace{0.12em}x\mspace{0.12em}}`;
     const result = wrapSelectionWithBackground(
       'a + x + b',
       4,
@@ -25,12 +27,14 @@ describe('palette', () => {
       '.12em',
     );
 
-    expect(result.source).toBe(String.raw`a + \bbox[.12em,#f4cccc]{x} + b`);
+    expect(result.source).toBe(`a + ${replacement} + b`);
     expect(result.start).toBe(4);
-    expect(result.end).toBe(27);
+    expect(result.end).toBe(4 + replacement.length);
   });
 
   it('normalizes reversed selections', () => {
+    const replacement =
+      String.raw`\bbox[0.12em,#f4cccc]{\mspace{0.12em}x\mspace{0.12em}}`;
     const result = wrapSelectionWithBackground(
       'a + x + b',
       5,
@@ -39,9 +43,9 @@ describe('palette', () => {
       '.12em',
     );
 
-    expect(result.source).toBe(String.raw`a + \bbox[.12em,#f4cccc]{x} + b`);
+    expect(result.source).toBe(`a + ${replacement} + b`);
     expect(result.start).toBe(4);
-    expect(result.end).toBe(27);
+    expect(result.end).toBe(4 + replacement.length);
   });
 
   it('omits bbox margin when margin is zero', () => {
@@ -77,12 +81,14 @@ describe('palette', () => {
     const source = String.raw`\bbox[#f4cccc]{x} + \bbox[2px,#d9ead3]{y}`;
 
     expect(updateBackgroundMargins(source, '.16em')).toBe(
-      String.raw`\bbox[.16em,#f4cccc]{x} + \bbox[.16em,#d9ead3]{y}`,
+      String.raw`\bbox[0.16em,#f4cccc]{\mspace{0.16em}x\mspace{0.16em}} + ` +
+        String.raw`\bbox[0.16em,#d9ead3]{\mspace{0.16em}y\mspace{0.16em}}`,
     );
   });
 
   it('removes generated bbox margins when margin is zero', () => {
-    const source = String.raw`\bbox[.12em,#f4cccc]{x}`;
+    const source =
+      String.raw`\bbox[0.12em,#f4cccc]{\mspace{0.12em}x\mspace{0.12em}}`;
 
     expect(updateBackgroundMargins(source, '0em')).toBe(
       String.raw`\bbox[#f4cccc]{x}`,

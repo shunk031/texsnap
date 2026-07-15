@@ -39,13 +39,14 @@ describe('render', () => {
   it('renders bbox backgrounds in MathJax output', async () => {
     const result = await renderEquation({
       ...defaultState,
-      source: String.raw`\bbox[.12em,#f4cccc]{x}`,
+      source: String.raw`\bbox[0.12em,#f4cccc]{\mspace{0.12em}x\mspace{0.12em}}`,
     });
 
     const background = result.svgElement.querySelector('rect[fill="#f4cccc"]');
     expect(result.svgText).toContain('<svg');
     expect(background).not.toBeNull();
     expect(Number(background?.getAttribute('width'))).toBeGreaterThan(572);
+    expect(Number(background?.getAttribute('height'))).toBeGreaterThan(453);
   });
 
   it('rejects MathJax TeX errors instead of exporting an error SVG', async () => {

@@ -109,6 +109,13 @@ const backgroundColorHexes = new Set(
 const bboxDimensionPattern =
   /^(\.\d+|\d+(\.\d*)?)(pt|em|ex|mu|px|in|cm|mm)$/;
 
+interface ParsedBbox {
+  start: number;
+  end: number;
+  options: string;
+  body: string;
+}
+
 export function wrapSelectionWithColor(
   source: string,
   start: number,
@@ -142,8 +149,7 @@ export function wrapSelectionWithBackground(
   const selectionStart = Math.min(start, end);
   const selectionEnd = Math.max(start, end);
   const selected = source.slice(selectionStart, selectionEnd);
-  const bboxOptions = margin === '0em' ? hex : `${margin},${hex}`;
-  const replacement = String.raw`\bbox[${bboxOptions}]{${selected}}`;
+  const replacement = buildBackgroundBbox(hex, margin, selected);
   const updated =
     source.slice(0, selectionStart) + replacement + source.slice(selectionEnd);
 
@@ -158,26 +164,120 @@ export function updateBackgroundMargins(
   source: string,
   margin: BackgroundMargin,
 ): string {
-  return source.replace(/\\bbox\[([^\]]+)\]\{/g, (match, options: string) => {
-    const parts = options.split(',').map((part) => part.trim());
-    if (parts.length < 1 || parts.length > 2) return match;
+  let updated = '';
+  let cursor = 0;
 
-    const color = parts.find((part) => backgroundColorHexes.has(part.toLowerCase()));
-    if (!color) return match;
+  while (cursor < source.length) {
+    const bboxStart = source.indexOf(String.raw`\bbox[`, cursor);
+    if (bboxStart === -1) {
+      updated += source.slice(cursor);
+      break;
+    }
 
-    const hasOnlyColor = parts.length === 1;
-    const hasGeneratedMargin =
-      parts.length === 2 &&
-      parts.some((part) => bboxDimensionPattern.test(part)) &&
-      parts.some((part) => part === color);
-    if (!hasOnlyColor && !hasGeneratedMargin) return match;
+    updated += source.slice(cursor, bboxStart);
+    const parsed = parseBbox(source, bboxStart);
+    if (!parsed) {
+      updated += source.slice(bboxStart, bboxStart + String.raw`\bbox[`.length);
+      cursor = bboxStart + String.raw`\bbox[`.length;
+      continue;
+    }
 
-    const bboxOptions = margin === '0em' ? color : `${margin},${color}`;
-    return String.raw`\bbox[${bboxOptions}]{`;
-  });
+    const color = getGeneratedBackgroundColor(parsed.options);
+    if (!color) {
+      updated += source.slice(parsed.start, parsed.end);
+    } else {
+      updated += buildBackgroundBbox(
+        color,
+        margin,
+        stripGeneratedHorizontalMargin(parsed.body),
+      );
+    }
+    cursor = parsed.end;
+  }
+
+  return updated;
 }
 
 export function isLightColor(rgb: Rgb): boolean {
   const [r, g, b] = rgb;
   return 0.299 * r + 0.587 * g + 0.114 * b > 128;
+}
+
+function buildBackgroundBbox(
+  hex: string,
+  margin: BackgroundMargin,
+  body: string,
+): string {
+  if (margin === '0em') return String.raw`\bbox[${hex}]{${body}}`;
+
+  const dimension = normalizeBboxDimension(margin);
+  return String.raw`\bbox[${dimension},${hex}]{\mspace{${dimension}}${body}\mspace{${dimension}}}`;
+}
+
+function normalizeBboxDimension(margin: BackgroundMargin): string {
+  return margin.startsWith('.') ? `0${margin}` : margin;
+}
+
+function getGeneratedBackgroundColor(options: string): string | null {
+  const parts = options.split(',').map((part) => part.trim());
+  if (parts.length < 1 || parts.length > 2) return null;
+
+  const color = parts.find((part) => backgroundColorHexes.has(part.toLowerCase()));
+  if (!color) return null;
+
+  const hasOnlyColor = parts.length === 1;
+  const hasGeneratedMargin =
+    parts.length === 2 &&
+    parts.some((part) => bboxDimensionPattern.test(part)) &&
+    parts.some((part) => part === color);
+
+  return hasOnlyColor || hasGeneratedMargin ? color : null;
+}
+
+function stripGeneratedHorizontalMargin(body: string): string {
+  const start = body.match(/^\\mspace\{([^}]+)\}/);
+  const end = body.match(/\\mspace\{([^}]+)\}$/);
+  if (!start || !end) return body;
+  if (!bboxDimensionPattern.test(start[1]) || !bboxDimensionPattern.test(end[1])) {
+    return body;
+  }
+
+  return body.slice(start[0].length, body.length - end[0].length);
+}
+
+function parseBbox(source: string, start: number): ParsedBbox | null {
+  const prefix = String.raw`\bbox[`;
+  if (!source.startsWith(prefix, start)) return null;
+
+  const optionsStart = start + prefix.length;
+  const optionsEnd = source.indexOf(']', optionsStart);
+  if (optionsEnd === -1 || source[optionsEnd + 1] !== '{') return null;
+
+  const bodyStart = optionsEnd + 2;
+  const bodyEnd = findMatchingBrace(source, optionsEnd + 1);
+  if (bodyEnd === -1) return null;
+
+  return {
+    start,
+    end: bodyEnd + 1,
+    options: source.slice(optionsStart, optionsEnd),
+    body: source.slice(bodyStart, bodyEnd),
+  };
+}
+
+function findMatchingBrace(source: string, openBrace: number): number {
+  let depth = 0;
+
+  for (let index = openBrace; index < source.length; index += 1) {
+    const character = source[index];
+    if (character === '\\') {
+      index += 1;
+      continue;
+    }
+    if (character === '{') depth += 1;
+    if (character === '}') depth -= 1;
+    if (depth === 0) return index;
+  }
+
+  return -1;
 }
