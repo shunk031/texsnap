@@ -5,6 +5,12 @@ import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, indentWithTab } from '@codemirror/commands';
 import { latex } from 'codemirror-lang-latex';
 import {
+  Copy,
+  Download,
+  RefreshCw,
+  createElement as createLucideElement,
+} from 'lucide';
+import {
   buildHashSource,
   loadState,
   saveState,
@@ -13,6 +19,8 @@ import { colorPalette, isLightColor, wrapSelectionWithColor } from './palette';
 import { renderEquation } from './render';
 import { copyPng, copySvg, downloadPng, downloadSvg } from './export';
 import type { FontPreset, RendererMode, RenderResult, Resolution } from './types';
+
+type IconNode = typeof Download;
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Missing app root.');
@@ -53,13 +61,29 @@ app.innerHTML = `
         <option value="png-white">PNG white</option>
       </select>
 
-      <button type="button" class="primary" id="generate">Generate <span id="shortcut">(Ctrl+S)</span></button>
+      <button type="button" class="primary" id="generate">
+        <span data-icon="generate"></span>
+        <span>Generate</span>
+        <span id="shortcut">(Ctrl+S)</span>
+      </button>
 
       <div class="button-grid">
-        <button type="button" id="downloadSvg">SVG</button>
-        <button type="button" id="downloadPng">PNG</button>
-        <button type="button" id="copySvg">Copy SVG</button>
-        <button type="button" id="copyPng">Copy PNG</button>
+        <button type="button" id="downloadSvg" title="Download SVG">
+          <span data-icon="download"></span>
+          <span>SVG</span>
+        </button>
+        <button type="button" id="downloadPng" title="Download PNG">
+          <span data-icon="download"></span>
+          <span>PNG</span>
+        </button>
+        <button type="button" id="copySvg" title="Copy SVG">
+          <span data-icon="copy"></span>
+          <span>Copy SVG</span>
+        </button>
+        <button type="button" id="copyPng" title="Copy PNG">
+          <span data-icon="copy"></span>
+          <span>Copy PNG</span>
+        </button>
       </div>
 
       <p class="status" id="status" role="status">Ready</p>
@@ -105,6 +129,7 @@ function init(): void {
   if (navigator.platform.toLowerCase().includes('mac')) {
     controls.shortcut.textContent = '(Cmd+S)';
   }
+  mountIcons();
   editorView = createEditor(state.source);
   renderPalette();
   bindEvents();
@@ -275,6 +300,29 @@ function mustGet<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
   if (!element) throw new Error(`Missing #${id}.`);
   return element as T;
+}
+
+function mountIcons(): void {
+  const icons: Record<string, IconNode> = {
+    copy: Copy,
+    download: Download,
+    generate: RefreshCw,
+  };
+
+  for (const placeholder of document.querySelectorAll<HTMLElement>('[data-icon]')) {
+    const iconName = placeholder.dataset.icon;
+    const icon = iconName ? icons[iconName] : undefined;
+    if (!icon) continue;
+
+    const svg = createLucideElement(icon, {
+      'aria-hidden': 'true',
+      class: 'button-icon',
+      height: 16,
+      width: 16,
+      'stroke-width': 2.25,
+    });
+    placeholder.replaceChildren(svg);
+  }
 }
 
 function createEditor(source: string): EditorView {
