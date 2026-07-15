@@ -24,7 +24,13 @@ import {
 } from './palette';
 import { renderEquation } from './render';
 import { copyPng, copySvg, downloadPng, downloadSvg } from './export';
-import type { FontPreset, RendererMode, RenderResult, Resolution } from './types';
+import type {
+  BackgroundMargin,
+  FontPreset,
+  RendererMode,
+  RenderResult,
+  Resolution,
+} from './types';
 
 type IconNode = typeof Download;
 
@@ -46,6 +52,15 @@ app.innerHTML = `
       <section class="palette-section" aria-labelledby="backgroundPaletteLabel">
         <h2 id="backgroundPaletteLabel">Recommended Background Colors</h2>
         <div class="background-palette" id="backgroundPalette"></div>
+        <label class="compact-label" for="backgroundMargin">Background Margin</label>
+        <select id="backgroundMargin">
+          <option value="0px">0px</option>
+          <option value="1px">1px</option>
+          <option value="2px">2px</option>
+          <option value="3px">3px</option>
+          <option value="4px">4px</option>
+          <option value="6px">6px</option>
+        </select>
       </section>
 
       <label for="resolution">Resolution</label>
@@ -142,6 +157,7 @@ const controls = {
   copyPng: mustGet<HTMLButtonElement>('copyPng'),
   textColorPalette: mustGet<HTMLDivElement>('textColorPalette'),
   backgroundPalette: mustGet<HTMLDivElement>('backgroundPalette'),
+  backgroundMargin: mustGet<HTMLSelectElement>('backgroundMargin'),
   preview: mustGet<HTMLDivElement>('preview'),
   status: mustGet<HTMLParagraphElement>('status'),
   modeLabel: mustGet<HTMLSpanElement>('modeLabel'),
@@ -192,6 +208,8 @@ function bindEvents(): void {
       void generate();
     });
   }
+
+  controls.backgroundMargin.addEventListener('change', syncStateFromControls);
 
   window.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
@@ -256,7 +274,7 @@ function applyTextColor(rgb: readonly [number, number, number]): void {
 
 function applyBackground(hex: string): void {
   applySourceWrap((source, start, end) =>
-    wrapSelectionWithBackground(source, start, end, hex),
+    wrapSelectionWithBackground(source, start, end, hex, state.backgroundMargin),
   );
 }
 
@@ -327,6 +345,7 @@ function applyStateToControls(): void {
   controls.bold.checked = state.bold;
   controls.whiteOnBlack.checked = state.whiteOnBlack;
   controls.rendererMode.value = state.rendererMode;
+  controls.backgroundMargin.value = state.backgroundMargin;
 }
 
 function syncStateFromControls(): void {
@@ -337,6 +356,7 @@ function syncStateFromControls(): void {
     bold: controls.bold.checked,
     whiteOnBlack: controls.whiteOnBlack.checked,
     rendererMode: controls.rendererMode.value as RendererMode,
+    backgroundMargin: controls.backgroundMargin.value as BackgroundMargin,
   };
   persist();
 }

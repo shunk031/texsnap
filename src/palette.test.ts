@@ -16,7 +16,13 @@ describe('palette', () => {
   });
 
   it('wraps selected text with a bbox background command', () => {
-    const result = wrapSelectionWithBackground('a + x + b', 4, 5, '#f4cccc');
+    const result = wrapSelectionWithBackground(
+      'a + x + b',
+      4,
+      5,
+      '#f4cccc',
+      '2px',
+    );
 
     expect(result.source).toBe(String.raw`a + \bbox[2px,#f4cccc]{x} + b`);
     expect(result.start).toBe(4);
@@ -24,11 +30,31 @@ describe('palette', () => {
   });
 
   it('normalizes reversed selections', () => {
-    const result = wrapSelectionWithBackground('a + x + b', 5, 4, '#f4cccc');
+    const result = wrapSelectionWithBackground(
+      'a + x + b',
+      5,
+      4,
+      '#f4cccc',
+      '2px',
+    );
 
     expect(result.source).toBe(String.raw`a + \bbox[2px,#f4cccc]{x} + b`);
     expect(result.start).toBe(4);
     expect(result.end).toBe(25);
+  });
+
+  it('omits bbox margin when margin is zero', () => {
+    const result = wrapSelectionWithBackground(
+      'a + x + b',
+      4,
+      5,
+      '#f4cccc',
+      '0px',
+    );
+
+    expect(result.source).toBe(String.raw`a + \bbox[#f4cccc]{x} + b`);
+    expect(result.start).toBe(4);
+    expect(result.end).toBe(21);
   });
 
   it('uses the lightest Google color names and hex values', () => {

@@ -1,4 +1,10 @@
-import type { AppState, FontPreset, RendererMode, Resolution } from './types';
+import type {
+  AppState,
+  BackgroundMargin,
+  FontPreset,
+  RendererMode,
+  Resolution,
+} from './types';
 
 export const defaultSource = String.raw`\begin{align*}
   \left( \int_0^\infty \frac{\sin x}{\sqrt{x}} dx \right)^2 =
@@ -13,6 +19,7 @@ export const defaultState: AppState = {
   bold: false,
   whiteOnBlack: false,
   rendererMode: 'svg',
+  backgroundMargin: '2px',
 };
 
 const storageKey = 'texsnap:settings';
@@ -20,6 +27,14 @@ const storageKey = 'texsnap:settings';
 const resolutions: Resolution[] = [150, 300, 600, 1200];
 const rendererModes: RendererMode[] = ['svg', 'png-transparent', 'png-white'];
 const fontPresets: FontPreset[] = ['mathjax-tex', 'mathjax-newcm'];
+const backgroundMargins: BackgroundMargin[] = [
+  '0px',
+  '1px',
+  '2px',
+  '3px',
+  '4px',
+  '6px',
+];
 
 export function parseHashSource(hash: string): string | null {
   const query = hash.startsWith('#') ? hash.slice(1) : hash;
@@ -65,6 +80,9 @@ function readSettings(storage: Storage): Partial<AppState> {
     rendererMode: isRendererMode(value.rendererMode)
       ? value.rendererMode
       : undefined,
+    backgroundMargin: isBackgroundMargin(value.backgroundMargin)
+      ? value.backgroundMargin
+      : undefined,
   };
 }
 
@@ -78,4 +96,8 @@ function isRendererMode(value: unknown): value is RendererMode {
 
 function isFontPreset(value: unknown): value is FontPreset {
   return fontPresets.includes(value as FontPreset);
+}
+
+function isBackgroundMargin(value: unknown): value is BackgroundMargin {
+  return backgroundMargins.includes(value as BackgroundMargin);
 }

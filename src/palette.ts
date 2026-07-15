@@ -101,8 +101,6 @@ export const backgroundPalette = [
 export type BackgroundColor = (typeof backgroundPalette)[number];
 export type Rgb = readonly [number, number, number];
 
-const backgroundPadding = '2px';
-
 export function wrapSelectionWithColor(
   source: string,
   start: number,
@@ -131,11 +129,13 @@ export function wrapSelectionWithBackground(
   start: number,
   end: number,
   hex: string,
+  margin: string,
 ): { source: string; start: number; end: number } {
   const selectionStart = Math.min(start, end);
   const selectionEnd = Math.max(start, end);
   const selected = source.slice(selectionStart, selectionEnd);
-  const replacement = String.raw`\bbox[${backgroundPadding},${hex}]{${selected}}`;
+  const bboxOptions = margin === '0px' ? hex : `${margin},${hex}`;
+  const replacement = String.raw`\bbox[${bboxOptions}]{${selected}}`;
   const updated =
     source.slice(0, selectionStart) + replacement + source.slice(selectionEnd);
 
