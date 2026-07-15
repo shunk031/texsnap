@@ -6,11 +6,23 @@ interface MathJaxApi {
   convert: (source: string, options: { display: boolean }) => HTMLElement;
 }
 
+export class TexRenderError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TexRenderError';
+  }
+}
+
 export async function renderEquation(state: AppState): Promise<RenderResult> {
   const mathJax = await ensureMathJax();
   const wrapper = mathJax.convert(prepareSource(state), {
     display: true,
   });
+  const texError = getMathJaxErrorMessage(wrapper);
+  if (texError) {
+    throw new TexRenderError(texError);
+  }
+
   const svg = wrapper.querySelector('svg');
   if (!(svg instanceof SVGSVGElement)) {
     throw new Error('MathJax did not return an SVG element.');
@@ -31,6 +43,22 @@ export function prepareSource(state: AppState): string {
 
 export function serializeSvg(svg: SVGSVGElement): string {
   return new XMLSerializer().serializeToString(svg);
+}
+
+export function getMathJaxErrorMessage(root: Element): string | null {
+  const errorNode = root.querySelector('[data-mml-node="merror"]');
+  if (!errorNode) return null;
+
+  const detail =
+    errorNode.querySelector('title')?.textContent ?? errorNode.textContent ?? '';
+  const normalized = detail.replace(/\s+/g, ' ').trim();
+  return normalized ? `TeX error: ${normalized}` : 'TeX rendering failed.';
+}
+
+export function filterRenderablePackages(packages: string[]): string[] {
+  return packages.filter(
+    (packageName) => !['noerrors', 'noundefined'].includes(packageName),
+  );
 }
 
 export function normalizeSvg(svg: SVGSVGElement, state: AppState): void {
@@ -93,7 +121,7 @@ async function createRenderer(): Promise<MathJaxApi> {
   RegisterHTMLHandler(adaptor);
 
   const tex = new TeX({
-    packages: AllPackages,
+    packages: filterRenderablePackages(AllPackages),
     inlineMath: [['$', '$'], ['\\(', '\\)']],
     displayMath: [['$$', '$$'], ['\\[', '\\]']],
   });
