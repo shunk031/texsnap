@@ -96,6 +96,28 @@ describe('render', () => {
     );
   });
 
+  it('aligns bbox backgrounds to italic glyph visual bounds', async () => {
+    const result = await renderEquation({
+      ...defaultState,
+      source: String.raw`\bbox[0.08em,#f4cccc]{A}`,
+      backgroundMargin: '.08em',
+    });
+
+    const background = result.svgElement.querySelector(
+      'rect[data-bgcolor="true"]',
+    );
+    const [viewBoxX, , viewBoxWidth] = result.svgElement
+      .getAttribute('viewBox')!
+      .split(/\s+/)
+      .map(Number);
+
+    expect(Number(background?.getAttribute('x'))).toBeGreaterThan(0);
+    expect(
+      Number(background?.getAttribute('x')) +
+        Number(background?.getAttribute('width')),
+    ).toBeLessThanOrEqual(viewBoxX + viewBoxWidth);
+  });
+
   it('keeps palette bbox vertical bounds scoped to each row', async () => {
     const result = await renderEquation({
       ...defaultState,
