@@ -81,7 +81,7 @@ export function normalizeSvg(svg: SVGSVGElement, state: AppState): void {
     svg.style.stroke = 'currentColor';
     svg.style.strokeWidth = '0.35px';
   }
-  expandBackgroundRects(svg, state);
+  expandBackgroundRects(svg);
 
   if (state.whiteOnBlack || state.rendererMode === 'png-white') {
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -97,8 +97,7 @@ export function normalizeSvg(svg: SVGSVGElement, state: AppState): void {
   }
 }
 
-function expandBackgroundRects(svg: SVGSVGElement, state: AppState): void {
-  const margin = backgroundMarginUnits(state.backgroundMargin);
+function expandBackgroundRects(svg: SVGSVGElement): void {
   const rects = Array.from(
     svg.querySelectorAll<SVGRectElement>('rect[data-bgcolor="true"]'),
   ).filter((rect) => {
@@ -106,15 +105,6 @@ function expandBackgroundRects(svg: SVGSVGElement, state: AppState): void {
     return fill ? backgroundColorHexes.has(fill) : false;
   });
   if (rects.length === 0) return;
-
-  let changed = false;
-  if (margin !== 0) {
-    for (const rect of rects) {
-      adjustNumberAttribute(rect, 'x', -margin);
-      adjustNumberAttribute(rect, 'width', margin * 2);
-      changed = true;
-    }
-  }
 
   const rectGroups = new Map<Element, SVGRectElement[]>();
   for (const rect of rects) {
@@ -143,11 +133,8 @@ function expandBackgroundRects(svg: SVGSVGElement, state: AppState): void {
 
       rect.setAttribute('y', String(minY));
       rect.setAttribute('height', String(normalizedHeight));
-      changed = true;
     }
   }
-
-  if (changed && margin !== 0) expandViewBoxHorizontally(svg, margin);
 }
 
 function backgroundRectVerticalGroup(
@@ -157,48 +144,8 @@ function backgroundRectVerticalGroup(
   return rect.closest('[data-mml-node="mtr"]') ?? svg;
 }
 
-function backgroundMarginUnits(margin: AppState['backgroundMargin']): number {
-  if (margin === '0em') return 0;
-  return Math.round(Number(margin.replace('em', '')) * 1000);
-}
-
-function adjustNumberAttribute(
-  element: Element,
-  attribute: string,
-  delta: number,
-): void {
-  const current = readNumberAttribute(element, attribute);
-  element.setAttribute(attribute, String(current + delta));
-}
-
 function readNumberAttribute(element: Element, attribute: string): number {
   return Number(element.getAttribute(attribute) ?? 0);
-}
-
-function expandViewBoxHorizontally(svg: SVGSVGElement, margin: number): void {
-  const viewBox = svg.getAttribute('viewBox');
-  if (!viewBox) return;
-
-  const [x, y, width, height] = viewBox.split(/\s+/).map(Number);
-  if ([x, y, width, height].some(Number.isNaN)) return;
-
-  svg.setAttribute(
-    'viewBox',
-    `${x - margin} ${y} ${width + margin * 2} ${height}`,
-  );
-  scaleLengthAttribute(svg, 'width', (width + margin * 2) / width);
-}
-
-function scaleLengthAttribute(
-  element: Element,
-  attribute: string,
-  scale: number,
-): void {
-  const value = element.getAttribute(attribute);
-  const match = value?.match(/^([\d.]+)([a-z%]+)$/i);
-  if (!match) return;
-
-  element.setAttribute(attribute, `${Number(match[1]) * scale}${match[2]}`);
 }
 
 async function ensureMathJax(): Promise<MathJaxApi> {

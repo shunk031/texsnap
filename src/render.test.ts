@@ -45,7 +45,7 @@ describe('render', () => {
     const background = result.svgElement.querySelector('rect[fill="#f4cccc"]');
     expect(result.svgText).toContain('<svg');
     expect(background).not.toBeNull();
-    expect(Number(background?.getAttribute('width'))).toBeGreaterThan(572);
+    expect(Number(background?.getAttribute('width'))).toBeGreaterThanOrEqual(572);
     expect(Number(background?.getAttribute('height'))).toBeGreaterThan(453);
   });
 
@@ -66,6 +66,34 @@ describe('render', () => {
 
     expect(new Set(backgrounds.map((background) => background.y)).size).toBe(1);
     expect(new Set(backgrounds.map((background) => background.height)).size).toBe(1);
+  });
+
+  it('does not add extra horizontal padding while rendering bbox backgrounds', async () => {
+    const source = String.raw`\bbox[0.08em,#f4cccc]{A}`;
+    const compact = await renderEquation({
+      ...defaultState,
+      source,
+      backgroundMargin: '.08em',
+    });
+    const wide = await renderEquation({
+      ...defaultState,
+      source,
+      backgroundMargin: '.24em',
+    });
+
+    const compactBackground = compact.svgElement.querySelector(
+      'rect[data-bgcolor="true"]',
+    );
+    const wideBackground = wide.svgElement.querySelector(
+      'rect[data-bgcolor="true"]',
+    );
+
+    expect(wideBackground?.getAttribute('x')).toBe(
+      compactBackground?.getAttribute('x'),
+    );
+    expect(wideBackground?.getAttribute('width')).toBe(
+      compactBackground?.getAttribute('width'),
+    );
   });
 
   it('keeps palette bbox vertical bounds scoped to each row', async () => {
