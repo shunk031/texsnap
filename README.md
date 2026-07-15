@@ -2,9 +2,7 @@
 
 [![Deploy to GitHub Pages](https://github.com/shunk031/texsnap/actions/workflows/pages.yml/badge.svg)](https://github.com/shunk031/texsnap/actions/workflows/pages.yml)
 
-TeXsnap is a small, static TeX equation image generator inspired by TeXclip.
-It is designed for GitHub Pages, so rendering runs entirely in the browser with
-MathJax and does not require PHP, TeX Live, Ghostscript, or a server API.
+TeXsnap is a small, static TeX equation image generator. It runs entirely in the browser with MathJax and does not require PHP, TeX Live, Ghostscript, or a server API.
 
 ## Features
 
@@ -30,21 +28,8 @@ npm test
 npm run build
 ```
 
-## GitHub Pages
-
-The Vite base path is fixed to `/texsnap/`, matching the expected project page:
-
-```text
-https://shunk031.github.io/texsnap/
-```
-
-The repository includes `.github/workflows/pages.yml`, which builds `dist/` and
-deploys it with GitHub Pages Actions when `main` is pushed.
-
 ## Acknowledgements
 
-TeXsnap is inspired by TeXclip, a TeX-based equation image generator for the
-web. Our TeXsnap is a small, static take on that workflow so it can run on
-GitHub Pages. Since TeXclip uses a server-side renderer for PNG, EPS, and SVG
-output, EPS generation and full TeX Live font compatibility are out of scope
-for this project.
+TeXsnap owes a great deal to [TeXclip](https://texclip.marutank.net/). TeXclip set the standard for a focused, browser-based TeX equation image workflow: write TeX, generate a clean image, and move it into slides, documents, or design tools with very little friction.
+
+Our TeXsnap is a small, static tribute to that excellent workflow. It keeps the core interaction lightweight enough to run on GitHub Pages, while TeXclip's server-side renderer remains the more complete reference for PNG, EPS, SVG, and full TeX Live font support.
