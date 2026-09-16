@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  completionStatus,
+  startCompletion,
+} from '@codemirror/autocomplete';
+import { EditorView, runScopeHandlers } from '@codemirror/view';
 
 vi.mock('./render', () => ({
   renderEquation: vi.fn(async () => {
@@ -49,5 +54,46 @@ describe('main app shell', () => {
       expect(svg?.getAttribute('width')).toBe('20ex');
       expect(svg?.getAttribute('height')).toBe('8ex');
     });
+  });
+
+  it('accepts an active completion with Tab and indents otherwise', async () => {
+    await import('./main');
+
+    const content = document.querySelector<HTMLElement>('.cm-content');
+    const view = content ? EditorView.findFromDOM(content) : null;
+    expect(view).not.toBeNull();
+    if (!view) return;
+
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: String.raw`\fr` },
+      selection: { anchor: 3 },
+    });
+    startCompletion(view);
+
+    await vi.waitFor(() => {
+      expect(completionStatus(view.state)).toBe('active');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(
+      runScopeHandlers(
+        view,
+        new KeyboardEvent('keydown', { key: 'Tab' }),
+        'editor',
+      ),
+    ).toBe(true);
+    expect(view.state.doc.toString()).toBe(String.raw`\frac`);
+
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: 'x' },
+      selection: { anchor: 1 },
+    });
+    runScopeHandlers(
+      view,
+      new KeyboardEvent('keydown', { key: 'Tab' }),
+      'editor',
+    );
+    expect(view.state.doc.toString()).toBe('  x');
+    view.destroy();
   });
 });

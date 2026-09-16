@@ -1,4 +1,5 @@
 import './styles.css';
+import { acceptCompletion } from '@codemirror/autocomplete';
 import { basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
@@ -517,6 +518,7 @@ function createEditor(source: string): EditorView {
               return true;
             },
           },
+          { key: 'Tab', run: acceptCompletion },
           indentWithTab,
           ...defaultKeymap,
         ]),
