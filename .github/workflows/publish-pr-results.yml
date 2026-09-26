@@ -59,7 +59,7 @@ jobs:
       - name: Validate rendered PNGs
         run: |
           set -euo pipefail
-          for name in mathrlap-overflow bbox-background aligned-equation; do
+          for name in mathrlap-overflow bbox-background aligned-equation default-equation; do
             file="render-results/$name.png"
             test -s "$file"
             test ! -L "$file"
@@ -85,6 +85,7 @@ jobs:
           cp render-results/mathrlap-overflow.png "pr/$PR_NUMBER/$HEAD_SHA/"
           cp render-results/bbox-background.png "pr/$PR_NUMBER/$HEAD_SHA/"
           cp render-results/aligned-equation.png "pr/$PR_NUMBER/$HEAD_SHA/"
+          cp render-results/default-equation.png "pr/$PR_NUMBER/$HEAD_SHA/"
           git add "pr/$PR_NUMBER"
           if git diff --cached --quiet; then
             echo "Rendered images are unchanged."
@@ -109,6 +110,7 @@ jobs:
               ['mathrlap-overflow.png', 'mathrlap overflow'],
               ['bbox-background.png', 'bbox background'],
               ['aligned-equation.png', 'aligned equation'],
+              ['default-equation.png', 'default equation'],
             ];
             const imageBase =
               'https://raw.githubusercontent.com/' +

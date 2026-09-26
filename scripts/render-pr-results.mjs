@@ -32,6 +32,11 @@ const cases = [
       '\\boldsymbol{G} &= \\{(b_i, l_i)\\}_{i=1}^{N}\n' +
       '\\end{align*}',
   },
+  {
+    name: 'default-equation',
+    title: 'default equation',
+    source: null,
+  },
 ];
 
 mkdirSync(outputDir, { recursive: true });
@@ -104,6 +109,7 @@ function buildPage(testCases) {
     '</style>',
     '<main id="results"></main>',
     '<script type="module">',
+    "import { defaultSource } from '/src/state.ts';",
     "import { renderEquation } from '/src/render.ts';",
     'const cases = ' + JSON.stringify(testCases) + ';',
     "const root = document.querySelector('#results');",
@@ -115,7 +121,7 @@ function buildPage(testCases) {
     "  const equation = document.createElement('div');",
     '  equation.className = "equation";',
     '  const result = await renderEquation({',
-    '    source: testCase.source,',
+    '    source: testCase.source ?? defaultSource,',
     '    resolution: 300,',
     "    fontPreset: 'mathjax-tex',",
     '    bold: false,',
