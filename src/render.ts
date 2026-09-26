@@ -82,6 +82,7 @@ export function normalizeSvg(svg: SVGSVGElement, state: AppState): void {
     svg.style.strokeWidth = '0.35px';
   }
   expandBackgroundRects(svg);
+  expandViewBoxToFitContent(svg);
 
   if (state.whiteOnBlack || state.rendererMode === 'png-white') {
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -198,6 +199,14 @@ function elementPathXBounds(
       });
     }
   }
+  if (element.tagName.toLowerCase() === 'text') {
+    const textWidth = readTextWidth(element);
+    if (textWidth !== null) {
+      const min = applyHorizontalTransform(0, nextTransform);
+      const max = applyHorizontalTransform(textWidth, nextTransform);
+      bounds.push({ min: Math.min(min, max), max: Math.max(min, max) });
+    }
+  }
 
   for (const child of Array.from(element.children)) {
     const childBounds = elementPathXBounds(child, nextTransform);
@@ -210,6 +219,24 @@ function elementPathXBounds(
     min: Math.min(...bounds.map((bound) => bound.min)),
     max: Math.max(...bounds.map((bound) => bound.max)),
   };
+}
+
+function readTextWidth(element: Element): number | null {
+  const text = element as SVGTextElement;
+  const measured = text.getComputedTextLength?.();
+  if (measured !== undefined && Number.isFinite(measured) && measured > 0) {
+    return measured;
+  }
+
+  const fontSize = Number.parseFloat(element.getAttribute('font-size') ?? '');
+  if (!Number.isFinite(fontSize) || fontSize <= 0) return null;
+
+  // ponytail: approximate detached SVG text; use browser text metrics when available.
+  return Array.from(element.textContent ?? '').reduce(
+    (width, character) =>
+      width + (character.codePointAt(0)! > 0x3000 ? fontSize : fontSize * 0.5),
+    0,
+  );
 }
 
 function backgroundRectVerticalGroup(
@@ -236,6 +263,30 @@ function expandViewBoxToFitBackgroundRects(
   const rectBounds = rects.map((rect) => rectGlobalXBounds(rect, svg));
   const minX = Math.min(x, ...rectBounds.map((bound) => bound.min));
   const maxX = Math.max(x + width, ...rectBounds.map((bound) => bound.max));
+  if (minX === x && maxX === x + width) return;
+
+  svg.setAttribute('viewBox', `${minX} ${y} ${maxX - minX} ${height}`);
+  scaleLengthAttribute(svg, 'width', (maxX - minX) / width);
+}
+
+function expandViewBoxToFitContent(svg: SVGSVGElement): void {
+  const viewBox = svg.getAttribute('viewBox');
+  if (!viewBox) return;
+
+  const [x, y, width, height] = viewBox.split(/\s+/).map(Number);
+  if ([x, y, width, height].some(Number.isNaN)) return;
+
+  const contentBounds = elementPathXBounds(svg, { scale: 1, translate: 0 });
+  if (
+    !contentBounds ||
+    !Number.isFinite(contentBounds.min) ||
+    !Number.isFinite(contentBounds.max)
+  ) {
+    return;
+  }
+
+  const minX = Math.min(x, contentBounds.min);
+  const maxX = Math.max(x + width, contentBounds.max);
   if (minX === x && maxX === x + width) return;
 
   svg.setAttribute('viewBox', `${minX} ${y} ${maxX - minX} ${height}`);

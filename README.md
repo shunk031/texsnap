@@ -41,6 +41,12 @@ npm test
 npm run build
 ```
 
+Create a before/after PNG comparison with a local Chrome/Chromium:
+
+```bash
+npm run render:comparison -- /tmp/texsnap-render-comparison
+```
+
 ## Acknowledgements
 
 TeXsnap owes a great deal to [TeXclip](https://texclip.marutank.net/). TeXclip set the standard for a focused, browser-based TeX equation image workflow: write TeX, generate a clean image, and move it into slides, documents, or design tools with very little friction.

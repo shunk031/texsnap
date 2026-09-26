@@ -3,6 +3,7 @@ import { defaultState } from './state';
 import {
   filterRenderablePackages,
   getMathJaxErrorMessage,
+  normalizeSvg,
   prepareSource,
   renderEquation,
 } from './render';
@@ -34,6 +35,58 @@ describe('render', () => {
     expect(result.svgElement.querySelector('rect')).not.toBeNull();
     expect(result.svgElement.style.color).toBe('rgb(255, 255, 255)');
     expect(result.svgElement.style.stroke).toBe('currentColor');
+  });
+
+  it('keeps mathrlap content inside the SVG viewBox', async () => {
+    const base = await renderEquation({
+      ...defaultState,
+      source: 'x',
+    });
+    const overflowing = await renderEquation({
+      ...defaultState,
+      source: String.raw`x\mathrlap{\text{long label}}`,
+    });
+
+    const baseWidth = Number(
+      base.svgElement.getAttribute('viewBox')!.split(/\s+/)[2],
+    );
+    const overflowingWidth = Number(
+      overflowing.svgElement.getAttribute('viewBox')!.split(/\s+/)[2],
+    );
+
+    expect(overflowingWidth).toBeGreaterThan(baseWidth);
+  });
+
+  it('includes SVG text content in the viewBox', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 10 10');
+    const text = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'text',
+    );
+    text.textContent = '日本語';
+    Object.defineProperty(text, 'getComputedTextLength', { value: () => 20 });
+    svg.append(text);
+
+    normalizeSvg(svg, defaultState);
+
+    expect(svg.getAttribute('viewBox')).toBe('0 0 20 10');
+  });
+
+  it('keeps the viewBox finite for Japanese mathrlap labels', async () => {
+    const result = await renderEquation({
+      ...defaultState,
+      source: String.raw`\begin{align*}
+\boldsymbol{G} = \{(\underbrace{\boldsymbol{b}_i}_{\mkern-70mu\mathclap{\text{要素 $i$ の bbox}}}, \underbrace{l_i}_{\mathrlap{\mkern-25mu\text{$i$ 番目のレイヤー}}})\}_{i=1}^{N}
+\end{align*}`,
+    });
+
+    const viewBox = result.svgElement
+      .getAttribute('viewBox')!
+      .split(/\s+/)
+      .map(Number);
+
+    expect(viewBox.every(Number.isFinite)).toBe(true);
   });
 
   it('renders bbox backgrounds in MathJax output', async () => {
