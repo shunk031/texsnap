@@ -324,6 +324,7 @@ function applySourceWrap(
   editorView.focus();
   state.source = updated.source;
   persist();
+  void generate();
 }
 
 async function generate(): Promise<void> {
