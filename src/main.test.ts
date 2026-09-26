@@ -142,7 +142,10 @@ describe('main app shell', () => {
     view.destroy();
   });
 
-  it('offers mathclap as a completion', async () => {
+  it.each([
+    [String.raw`$\mathcl`, String.raw`$\mathclap`],
+    [String.raw`$\boldsym`, String.raw`$\boldsymbol`],
+  ])('offers %s as a completion', async (source, expected) => {
     await import('./main');
 
     const content = document.querySelector<HTMLElement>('.cm-content');
@@ -150,7 +153,6 @@ describe('main app shell', () => {
     expect(view).not.toBeNull();
     if (!view) return;
 
-    const source = String.raw`$\mathcl`;
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: source },
       selection: { anchor: source.length },
@@ -164,7 +166,7 @@ describe('main app shell', () => {
     await vi.waitFor(() => {
       expect(acceptCompletion(view)).toBe(true);
     });
-    expect(view.state.doc.toString()).toBe(String.raw`$\mathclap`);
+    expect(view.state.doc.toString()).toBe(expected);
     view.destroy();
   });
 });
