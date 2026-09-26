@@ -1,10 +1,14 @@
 import './styles.css';
-import { acceptCompletion } from '@codemirror/autocomplete';
+import {
+  acceptCompletion,
+  autocompletion,
+  completeFromList,
+} from '@codemirror/autocomplete';
 import { basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, indentWithTab } from '@codemirror/commands';
-import { latex } from 'codemirror-lang-latex';
+import { latex, latexCompletionSource } from 'codemirror-lang-latex';
 import {
   Copy,
   Download,
@@ -504,10 +508,16 @@ function createEditor(source: string): EditorView {
         latex({
           autoCloseTags: true,
           autoCloseBrackets: true,
-          enableAutocomplete: true,
+          enableAutocomplete: false,
           enableLinting: false,
           enableTooltips: true,
           fileName: 'equation.tex',
+        }),
+        autocompletion({
+          override: [
+            latexCompletionSource(true),
+            completeFromList(['\\mathclap']),
+          ],
         }),
         EditorView.lineWrapping,
         keymap.of([

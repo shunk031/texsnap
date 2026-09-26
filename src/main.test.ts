@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  acceptCompletion,
   completionStatus,
   startCompletion,
 } from '@codemirror/autocomplete';
@@ -94,6 +95,32 @@ describe('main app shell', () => {
       'editor',
     );
     expect(view.state.doc.toString()).toBe('  x');
+    view.destroy();
+  });
+
+  it('offers mathclap as a completion', async () => {
+    await import('./main');
+
+    const content = document.querySelector<HTMLElement>('.cm-content');
+    const view = content ? EditorView.findFromDOM(content) : null;
+    expect(view).not.toBeNull();
+    if (!view) return;
+
+    const source = String.raw`$\mathcl`;
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: source },
+      selection: { anchor: source.length },
+    });
+    startCompletion(view);
+
+    await vi.waitFor(() => {
+      expect(completionStatus(view.state)).toBe('active');
+    });
+
+    await vi.waitFor(() => {
+      expect(acceptCompletion(view)).toBe(true);
+    });
+    expect(view.state.doc.toString()).toBe(String.raw`$\mathclap`);
     view.destroy();
   });
 });
