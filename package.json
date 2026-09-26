@@ -7,7 +7,6 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "render:comparison": "node scripts/render-comparison.mjs",
     "test": "vitest run"
   },
   "devDependencies": {
