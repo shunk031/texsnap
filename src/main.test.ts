@@ -57,6 +57,50 @@ describe('main app shell', () => {
     });
   });
 
+  it.each([
+    ['resolution', 'resolution', '600'],
+    ['font preset', 'fontPreset', 'mathjax-newcm'],
+    ['bold', 'bold', true],
+    ['white-on-black', 'whiteOnBlack', true],
+    ['renderer mode', 'rendererMode', 'png-white'],
+    ['background margin', 'backgroundMargin', '.16em'],
+  ])('rerenders when the %s setting changes', async (_label, id, value) => {
+    await import('./main');
+    const { renderEquation } = await import('./render');
+    const renderMock = vi.mocked(renderEquation);
+    await vi.waitFor(() => expect(renderMock).toHaveBeenCalled());
+    renderMock.mockClear();
+
+    const control = document.querySelector<HTMLInputElement | HTMLSelectElement>(
+      `#${id}`,
+    );
+    expect(control).not.toBeNull();
+    if (!control) return;
+
+    if (control instanceof HTMLInputElement) {
+      control.checked = value === true;
+    } else {
+      control.value = String(value);
+    }
+    control.dispatchEvent(new Event('change'));
+
+    await vi.waitFor(() => expect(renderMock).toHaveBeenCalledTimes(1));
+  });
+
+  it('rerenders after applying a palette color', async () => {
+    await import('./main');
+    const { renderEquation } = await import('./render');
+    const renderMock = vi.mocked(renderEquation);
+    await vi.waitFor(() => expect(renderMock).toHaveBeenCalled());
+    renderMock.mockClear();
+
+    const swatch = document.querySelector<HTMLButtonElement>('.text-color-swatch');
+    expect(swatch).not.toBeNull();
+    swatch?.click();
+
+    await vi.waitFor(() => expect(renderMock).toHaveBeenCalledTimes(1));
+  });
+
   it('accepts an active completion with Tab and indents otherwise', async () => {
     await import('./main');
 
