@@ -38,6 +38,23 @@ import type {
   Resolution,
 } from './types';
 
+const commonMathCompletions = [
+  // Math alphabets and text
+  '\\boldsymbol', '\\bm', '\\mathbf', '\\mathrm', '\\mathit',
+  '\\mathsf', '\\mathtt', '\\mathcal', '\\mathbb', '\\mathscr',
+  '\\text', '\\operatorname',
+  // Fractions and annotations
+  '\\dfrac', '\\tfrac', '\\binom', '\\overset', '\\underset',
+  '\\substack', '\\underbrace', '\\overbrace', '\\boxed',
+  // Delimiters and spacing
+  '\\left', '\\right', '\\middle', '\\big', '\\Big', '\\bigg', '\\Bigg',
+  '\\mathclap', '\\mathllap', '\\mathrlap', '\\mkern',
+  // Common operators and relations
+  '\\cdot', '\\times', '\\pm', '\\mp', '\\cdots', '\\ldots', '\\dots',
+  '\\le', '\\ge', '\\ne', '\\to', '\\mapsto', '\\implies', '\\iff',
+  '\\nabla', '\\partial', '\\oint', '\\forall', '\\exists',
+] as const;
+
 type IconNode = typeof Download;
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -517,7 +534,7 @@ function createEditor(source: string): EditorView {
         autocompletion({
           override: [
             latexCompletionSource(true),
-            completeFromList(['\\mathclap']),
+            completeFromList(commonMathCompletions),
           ],
         }),
         EditorView.lineWrapping,
