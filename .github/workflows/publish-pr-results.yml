@@ -1,0 +1,181 @@
+name: Publish PR results
+
+on:
+  workflow_run:
+    workflows: [Render PR results]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: publish-pr-render-${{ github.event.workflow_run.pull_requests[0].number || github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Find the pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          EVENT_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          set -euo pipefail
+          pr_number="$EVENT_PR_NUMBER"
+          if [ -z "$pr_number" ]; then
+            pr_number="$(gh api \
+              --header 'Accept: application/vnd.github+json' \
+              "/repos/$REPOSITORY/commits/$HEAD_SHA/pulls" \
+              --jq '.[0].number')"
+          fi
+          case "$pr_number" in
+            ''|*[!0-9]*) echo "Could not resolve a pull request number." >&2; exit 1 ;;
+          esac
+          echo "number=$pr_number" >> "$GITHUB_OUTPUT"
+
+      - name: Download rendered PNGs
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-render-results
+          path: render-results
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Validate rendered PNGs
+        run: |
+          set -euo pipefail
+          for name in mathrlap-overflow bbox-background aligned-equation default-equation; do
+            file="render-results/$name.png"
+            test -s "$file"
+            test ! -L "$file"
+            test "$(file --brief --mime-type "$file")" = "image/png"
+          done
+          test -z "$(find render-results -type f ! -name '*.png' -print -quit)"
+
+      - name: Publish rendered PNGs
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          branch="pr-render-results-$PR_NUMBER"
+          git fetch origin "$branch" || true
+          if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+            git switch --track -c "$branch" "origin/$branch"
+          else
+            git switch -c "$branch"
+          fi
+          git rm -r --ignore-unmatch -- "pr/$PR_NUMBER"
+          mkdir -p "pr/$PR_NUMBER/$HEAD_SHA"
+          cp render-results/mathrlap-overflow.png "pr/$PR_NUMBER/$HEAD_SHA/"
+          cp render-results/bbox-background.png "pr/$PR_NUMBER/$HEAD_SHA/"
+          cp render-results/aligned-equation.png "pr/$PR_NUMBER/$HEAD_SHA/"
+          cp render-results/default-equation.png "pr/$PR_NUMBER/$HEAD_SHA/"
+          git add "pr/$PR_NUMBER"
+          if git diff --cached --quiet; then
+            echo "Rendered images are unchanged."
+          else
+            git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "chore: update PR $PR_NUMBER render results"
+            git push --force-with-lease origin "$branch"
+          fi
+
+      - name: Update the PR comment
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          script: |
+            const marker = '<!-- texsnap-pr-render -->';
+            const issueNumber = Number(process.env.PR_NUMBER);
+            const branch = 'pr-render-results-' + issueNumber;
+            const files = [
+              ['mathrlap-overflow.png', 'mathrlap overflow'],
+              ['bbox-background.png', 'bbox background'],
+              ['aligned-equation.png', 'aligned equation'],
+              ['default-equation.png', 'default equation'],
+            ];
+            const imageBase =
+              'https://raw.githubusercontent.com/' +
+              context.repo.owner +
+              '/' +
+              context.repo.repo +
+              '/' +
+              branch +
+              '/pr/' +
+              issueNumber +
+              '/' +
+              process.env.HEAD_SHA;
+            const body = [
+              marker,
+              '## Rendered PR results',
+              '',
+              files
+                .map(function ([file, title]) {
+                  return (
+                    '### ' +
+                    title +
+                    '\n\n![' +
+                    title +
+                    '](' +
+                    imageBase +
+                    '/' +
+                    file +
+                    ')'
+                  );
+                })
+                .join('\n\n'),
+              '',
+              '_Rendered from commit ' +
+                process.env.HEAD_SHA.slice(0, 7) +
+                '._',
+            ].join('\n\n');
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                per_page: 100,
+              },
+            );
+            const existing = comments.find(function (comment) {
+              return (
+                comment.user &&
+                comment.user.type === 'Bot' &&
+                comment.body &&
+                comment.body.includes(marker)
+              );
+            });
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body,
+              });
+            }
